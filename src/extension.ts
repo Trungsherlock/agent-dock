@@ -43,6 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
 				),
 			});
 			terminal.show();
+			terminal.sendText(`claude`);
 
 			sessionManager.add(name, picked.id, terminal);
 		})

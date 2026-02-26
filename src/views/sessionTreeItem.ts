@@ -13,5 +13,10 @@ export class SessionTreeItem extends vscode.TreeItem {
         this.description = session.status;
         this.iconPath = new vscode.ThemeIcon(category.icon);
         this.contextValue = 'session';
+        this.command = {
+            command: 'agentdock.focusSession',
+            title: 'Focus Session',
+            arguments: [this],
+        };
     }
 }
