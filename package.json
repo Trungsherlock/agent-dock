@@ -12,10 +12,73 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "agentdock",
+          "title": "AgentDock",
+          "icon": "resources/icons/agentdock.svg"
+        }
+      ]
+    },
+    "views": {
+      "agentdock": [
+        {
+          "id": "agentdock.sessionsView",
+          "name": "Agent Sessions",
+          "contextualTitle": "AgentDock"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "agentdock.helloWorld",
-        "title": "Hello World"
+        "command": "agentdock.newSession",
+        "title": "New Agent Session",
+        "icon": "$(add)"
+      },
+      {
+        "command": "agentdock.endSession",
+        "title": "End Session",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "agentdock.renameSession",
+        "title": "Rename Session"
+      },
+      {
+        "command": "agentdock.focusSession",
+        "title": "Switch Agent Session"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "agentdock.newSession",
+          "when": "view == agentdock.sessionsView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "agentdock.endSession",
+          "when": "viewItem == session",
+          "group": "inline"
+        },
+        {
+          "command": "agentdock.renameSession",
+          "when": "viewItem == session"
+        },
+        {
+          "command": "agentdock.focusSession",
+          "when": "viewItem == session",
+          "group": "inline"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "agentdock.sessionsView",
+        "contents": "No active agent sessions.\n[New Agent Session](command:agentdock.newSession)"
       }
     ]
   },
