@@ -9,8 +9,15 @@ export interface SerializeSession {
     note: string;
 }
 
+export interface SerializedCategory {
+    id: string;
+    label: string,
+    icon: string;
+    color: string;
+}
+
 export type ExtensionMessage =
-    | { command: 'stateUpdate'; sessions: SerializeSession[] };
+    | { command: 'stateUpdate'; sessions: SerializeSession[], categories: SerializedCategory[] };
 
 
 export type WebviewMessage = 

@@ -24,8 +24,13 @@
     "views": {
       "agentdock": [
         {
+          "id": "agentdock.boardView",
+          "name": "Agent Board",
+          "type": "webview"
+        },
+        {
           "id": "agentdock.sessionsView",
-          "name": "Agent Sessions",
+          "name": "Session (list)",
           "contextualTitle": "AgentDock"
         }
       ]
