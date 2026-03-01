@@ -9,4 +9,5 @@ export interface Session {
     status: SessionStatus;
     createdAt: Date;
     terminal: vscode.Terminal;
+    note: string;
 }

@@ -1,14 +1,16 @@
 {
   "name": "agentdock",
-  "displayName": "agentdock",
-  "description": "Organize and manage AI agent terminal sessions",
-  "version": "0.0.1",
+  "displayName": "AgentDock",
+  "description": "Kanban-style board for managing AI coding agent terminal sessions",
+  "version": "0.1.0",
+  "publisher": "YOUR_PUBLISHER_ID",
   "engines": {
     "vscode": "^1.109.0"
   },
   "categories": [
     "Other"
   ],
+  "keywords": ["agent", "claude", "ai", "terminal", "kanban"],
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
@@ -24,8 +26,13 @@
     "views": {
       "agentdock": [
         {
+          "id": "agentdock.boardView",
+          "name": "Agent Board",
+          "type": "webview"
+        },
+        {
           "id": "agentdock.sessionsView",
-          "name": "Agent Sessions",
+          "name": "Session (list)",
           "contextualTitle": "AgentDock"
         }
       ]
@@ -83,9 +90,11 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile && npm run build-webview",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "build-webview": "cd webview-ui && npm run build",
+    "watch-webview": "cd webview-ui && npm run dev",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "vscode-test"

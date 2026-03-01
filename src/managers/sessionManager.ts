@@ -9,12 +9,13 @@ export class SessionManager {
 
     add(name: string, categoryId: string, terminal: vscode.Terminal): Session {
         const session: Session = {
-            id: `session=${Date.now()}`,
+            id: `session-${Date.now()}`,
             name,
             categoryId,
             status: 'active',
             createdAt: new Date(),
             terminal,
+            note: '',
         };
         this.sessions.push(session);
         this._onDidChange.fire();
@@ -59,6 +60,14 @@ export class SessionManager {
         const session = this.getById(id);
         if (session) {
             session.status = status;
+            this._onDidChange.fire();
+        }
+    }
+
+    setNote(id: string, note: string): void {
+        const session = this.getById(id);
+        if (session) {
+            session.note = note;
             this._onDidChange.fire();
         }
     }
