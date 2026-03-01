@@ -74,6 +74,10 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 this._sessionManager.setNote(message.sessionId, message.note);
                 break;
             }
+            case 'setStatus': {
+                this._sessionManager.setStatus(message.sessionId, message.status);
+                break;
+            }
             case 'newSession': {
                 vscode.commands.executeCommand('agentdock.newSession');
                 break;

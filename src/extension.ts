@@ -5,10 +5,52 @@ import { SessionTreeItem } from './views/sessionTreeItem';
 import { BoardViewProvider } from './views/boardViewProvider';
 import { CATEGORIES } from './constants/categories';
 
+const SESSIONS_KEY = 'agentdock.sessions';
+
+interface PersistedSession {
+    name: string;
+    categoryId: string;
+    note: string;
+    status: string;
+}
+
 export function activate(context: vscode.ExtensionContext) {
     const sessionManager = new SessionManager();
     const treeProvider = new SessionTreeProvider(sessionManager);
     const boardProvider = new BoardViewProvider(context.extensionUri, sessionManager);
+
+    // Restore sessions saved from last run
+    const saved = context.workspaceState.get<PersistedSession[]>(SESSIONS_KEY, []);
+    for (const s of saved) {
+        const cat = CATEGORIES.find(c => c.id === s.categoryId) ?? CATEGORIES[CATEGORIES.length - 1];
+        // Reuse an existing terminal with the same name if VS Code persisted it
+        const existing = vscode.window.terminals.find(t => t.name === s.name);
+        const terminal = existing ?? vscode.window.createTerminal({
+            name: s.name,
+            iconPath: new vscode.ThemeIcon(cat.icon),
+        });
+        if (!existing) {
+            terminal.sendText('claude');
+        }
+        const session = sessionManager.add(s.name, s.categoryId, terminal);
+        if (s.note) { sessionManager.setNote(session.id, s.note); }
+        if (s.status && s.status !== 'active') {
+            sessionManager.setStatus(session.id, s.status as import('./models/session').SessionStatus);
+        }
+    }
+
+    // Auto-save on every change
+    context.subscriptions.push(
+        sessionManager.onDidChange(() => {
+            const data: PersistedSession[] = sessionManager.getAll().map(s => ({
+                name: s.name,
+                categoryId: s.categoryId,
+                note: s.note,
+                status: s.status,
+            }));
+            context.workspaceState.update(SESSIONS_KEY, data);
+        })
+    );
 
     vscode.window.registerTreeDataProvider('agentdock.sessionsView', treeProvider);
 

@@ -26,4 +26,5 @@ export type WebviewMessage =
     | { command: 'endSession';     sessionId: string }
     | { command: 'renameSession';  sessionId: string; newName: string }
     | { command: 'moveSession';    sessionId: string; newCategoryId: string }
-    | { command: 'setNote';        sessionId: string; note: string };
+    | { command: 'setNote';        sessionId: string; note: string }
+    | { command: 'setStatus';      sessionId: string; status: SessionStatus };

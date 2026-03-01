@@ -19,6 +19,8 @@ export default function App() {
   const [editingNote, setEditingNote] = useState<{ id: string; value: string } | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverCategoryId, setDragOverCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     vscode.postMessage({ command: 'ready' });
@@ -76,12 +78,26 @@ export default function App() {
     setEditingNote(null);
   }
 
+  function handleDrop(categoryId: string) {
+    if (draggedId) {
+      const session = state.sessions.find(s => s.id === draggedId);
+      if (session && session.categoryId !== categoryId) {
+        vscode.postMessage({ command: 'moveSession', sessionId: draggedId, newCategoryId: categoryId });
+      }
+    }
+    setDraggedId(null);
+    setDragOverCategoryId(null);
+  }
+
+  const visibleGroups = grouped.filter(g => g.sessions.length > 0 || draggedId !== null);
+
   return (
     <div style={{
         padding: "12px",
         color: "var(--vscode-foreground)",
         fontFamily: "var(--vscode-font-family)",
       }}
+      onClick={() => setContextMenu(null)}
     >
       <div
         style={{
@@ -121,113 +137,223 @@ export default function App() {
         </div>
       )}
 
-      {grouped
-        .filter((g) => g.sessions.length > 0)
-        .map(({ category, sessions }) => (
-          <div key={category.id} style={{ marginBottom: 16 }}>
+      {visibleGroups
+        .map(({ category, sessions }) => {
+          const isDropTarget = dragOverCategoryId === category.id;
+          const draggedSession = draggedId ? state.sessions.find(s => s.id === draggedId) : null;
+          const canDrop = draggedSession && draggedSession.categoryId !== category.id;
+
+          return (
             <div
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: category.color,
-                marginBottom: 6,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
+              key={category.id}
+              style={{ marginBottom: 16 }}
+              onDragOver={(e) => {
+                if (!draggedId) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                setDragOverCategoryId(category.id);
+              }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setDragOverCategoryId(null);
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleDrop(category.id);
               }}
             >
-              <span>{category.icon}</span>
-              <span>{category.label}</span>
-              <span style={{ color: "var(--vscode-descriptionForeground)", fontWeight: 400 }}>
-                ({sessions.length})
-              </span>
-            </div>
-
-            {sessions.map(session => (
               <div
-                key={session.id}
-                onClick={() => vscode.postMessage({ command: 'focusSession', sessionId: session.id })}
-                onContextMenu={(e) => handleRightClick(e, session)}
                 style={{
-                  background: 'var(--vscode-list-hoverBackground)',
-                  border: '1px solid var(--vscode-widget-border)',
-                  borderRadius: 4,
-                  padding: '8px 10px',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: category.color,
                   marginBottom: 6,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  {renamingId === session.id ? (
-                    <input
-                      autoFocus
-                      value={renameValue}
-                      onChange={e => setRenameValue(e.target.value)}
-                      onBlur={() => commitRename(session.id)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') commitRename(session.id);
-                        if (e.key === 'Escape') setRenamingId(null);
-                      }}
-                      onClick={e => e.stopPropagation()}
-                      style={{
-                        background: 'var(--vscode-input-background)',
-                        color: 'var(--vscode-input-background)',
-                        border: '1px solid var(--vscode-focusBorder)',
-                        borderRadius: 3,
-                        padding: '2px 6px',
-                        fontSize: 12,
-                        fontWeight: 500,
-                        width: '100%',
-                        marginRight: 8,
-                        outline: 'none',
-                      }}
-                    />
-                  ) : (
-                    <div style={{ fontWeight: 500 }}>{ session.name }</div>
-                  )}
-                  <StatusBadge status={session.status} />
-                </div>
-
-                {editingNote?.id === session.id ? (
-                  <input
-                    autoFocus
-                    value={editingNote.value}
-                    onChange={e => setEditingNote({ id: session.id, value: e.target.value })}
-                    onBlur={() => commitNote(session.id)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') commitNote(session.id);
-                      if (e.key === 'Escape') setEditingNote(null);
-                    }}
-                    onClick={e => e.stopPropagation()}
-                    placeholder="Add a note..."
-                    style={{
-                      marginTop: 4,
-                      background: 'var(--vscode-input-background)',
-                      color: 'var(--vscode-input-foreground)',
-                      border: '1px solid var(--vscode-focusBorder)',
-                      borderRadius: 3,
-                      padding: '2px 6px',
-                      fontSize: 11,
-                      width: '100%',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                ) : session.note ? (
-                  <div style={{ color: 'var(--vscode-descriptionForeground)', marginTop: 2, fontSize: 11 }}>
-                    {session.note}
-                  </div>
-                ) : null}
+                <span>{category.icon}</span>
+                <span>{category.label}</span>
+                <span
+                  style={{
+                    color: "var(--vscode-descriptionForeground)",
+                    fontWeight: 400,
+                  }}
+                >
+                  ({sessions.length})
+                </span>
               </div>
-            ))}
-          </div>
-        ))}
+
+              {sessions.map((session) => {
+                const isDragging = draggedId === session.id;
+
+                return (
+                  <div
+                    key={session.id}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedId(session.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/plain", session.id);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedId(null);
+                      setDragOverCategoryId(null);
+                    }}
+                    onClick={() => {
+                      if (!draggedId) {
+                        vscode.postMessage({
+                          command: "focusSession",
+                          sessionId: session.id,
+                        });
+                      }
+                    }}
+                    onContextMenu={(e) => handleRightClick(e, session)}
+                    style={{
+                      background: "var(--vscode-list-hoverBackground)",
+                      border: "1px solid var(--vscode-widget-border)",
+                      borderRadius: 4,
+                      padding: "8px 10px",
+                      marginBottom: 6,
+                      cursor: isDragging ? "grabbing" : "grab",
+                      fontSize: 12,
+                      opacity: isDragging ? 0.4 : 1,
+                      transition: "opacity 0.15s",
+                      userSelect: "none",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      {renamingId === session.id ? (
+                        <input
+                          autoFocus
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onBlur={() => commitRename(session.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitRename(session.id);
+                            if (e.key === "Escape") setRenamingId(null);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            background: "var(--vscode-input-background)",
+                            color: "var(--vscode-input-background)",
+                            border: "1px solid var(--vscode-focusBorder)",
+                            borderRadius: 3,
+                            padding: "2px 6px",
+                            fontSize: 12,
+                            fontWeight: 500,
+                            width: "100%",
+                            marginRight: 8,
+                            outline: "none",
+                          }}
+                        />
+                      ) : (
+                        <div style={{ fontWeight: 500 }}>{session.name}</div>
+                      )}
+                      <StatusBadge
+                        status={session.status}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const cycle: Record<string, string> = { active: 'idle', idle: 'done', done: 'active' };
+                          vscode.postMessage({ command: 'setStatus', sessionId: session.id, status: cycle[session.status] ?? 'active' });
+                        }}
+                      />
+                    </div>
+
+                    {editingNote?.id === session.id ? (
+                      <input
+                        autoFocus
+                        value={editingNote.value}
+                        onChange={(e) =>
+                          setEditingNote({
+                            id: session.id,
+                            value: e.target.value,
+                          })
+                        }
+                        onBlur={() => commitNote(session.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitNote(session.id);
+                          if (e.key === "Escape") setEditingNote(null);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="Add a note..."
+                        style={{
+                          marginTop: 4,
+                          background: "var(--vscode-input-background)",
+                          color: "var(--vscode-input-foreground)",
+                          border: "1px solid var(--vscode-focusBorder)",
+                          borderRadius: 3,
+                          padding: "2px 6px",
+                          fontSize: 11,
+                          width: "100%",
+                          outline: "none",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    ) : session.note ? (
+                      <div
+                        style={{
+                          color: "var(--vscode-descriptionForeground)",
+                          marginTop: 2,
+                          fontSize: 11,
+                        }}
+                      >
+                        {session.note}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+
+              {isDropTarget && canDrop && (
+                <div
+                  style={{
+                    border: `2px dashed ${category.color}`,
+                    borderRadius: 4,
+                    padding: "8px",
+                    marginBottom: 6,
+                    fontSize: 11,
+                    color: category.color,
+                    textAlign: "center",
+                    opacity: 0.8,
+                  }}
+                >
+                  Drop to move here
+                </div>
+              )}
+
+              {sessions.length === 0 && draggedId && (
+                <div
+                  style={{
+                    border: `2px dashed ${isDropTarget && canDrop ? category.color : "var(--vscode-widget-border)"}`,
+                    borderRadius: 4,
+                    padding: "12px",
+                    fontSize: 11,
+                    color:
+                      isDropTarget && canDrop
+                        ? category.color
+                        : "var(--vscode-descriptionForeground)",
+                    textAlign: "center",
+                    opacity: 0.6,
+                    transition: "border-color 0.15s, color 0.15s",
+                  }}
+                >
+                  Drop here
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {contextMenu && (
           <ContextMenuPopup
@@ -380,12 +506,20 @@ function ContextMenuPopup({
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, onClick }: { status: string; onClick?: (e: React.MouseEvent) => void }) {
   const map: Record<string, { label: string; color: string }> = {
     active: { label: 'active', color: '#4ec9b0' },
-    idle: { label: 'idle', color: '#858585' },
-    done: { label: 'done', color: '#89d185' }
+    idle:   { label: 'idle',   color: '#858585' },
+    done:   { label: 'done',   color: '#89d185' },
   };
   const { label, color } = map[status] ?? map.idle;
-  return <span style={{ fontSize: 10, color, whiteSpace: 'nowrap' }}>{ label }</span>
+  return (
+    <span
+      onClick={onClick}
+      title="Click to cycle status"
+      style={{ fontSize: 10, color, whiteSpace: 'nowrap', cursor: onClick ? 'pointer' : 'default' }}
+    >
+      {label}
+    </span>
+  );
 }
