@@ -1,14 +1,16 @@
 {
   "name": "agentdock",
-  "displayName": "agentdock",
-  "description": "Organize and manage AI agent terminal sessions",
-  "version": "0.0.1",
+  "displayName": "AgentDock",
+  "description": "Kanban-style board for managing AI coding agent terminal sessions",
+  "version": "0.1.0",
+  "publisher": "YOUR_PUBLISHER_ID",
   "engines": {
     "vscode": "^1.109.0"
   },
   "categories": [
     "Other"
   ],
+  "keywords": ["agent", "claude", "ai", "terminal", "kanban"],
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
