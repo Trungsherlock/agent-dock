@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* VS Code webview resets */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
