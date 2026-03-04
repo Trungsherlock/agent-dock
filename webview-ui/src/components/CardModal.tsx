@@ -71,7 +71,7 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
             className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded"
             style={{ background: list.color + "22", color: list.color }}
           >
-            {list.icon} {list.title}
+            {list.title}
           </span>
           <button
             onClick={onClose}

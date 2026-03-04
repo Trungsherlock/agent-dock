@@ -1,55 +1,61 @@
 import * as vscode from 'vscode';
 import { SessionManager } from './managers/sessionManager';
+import { CohortManager, type Cohort } from './managers/cohortManager';
 import { SessionTreeProvider } from './views/sessionTreeProvider';
 import { SessionTreeItem } from './views/sessionTreeItem';
 import { BoardViewProvider } from './views/boardViewProvider';
-import { CATEGORIES } from './constants/categories';
 import { watchForNewClaudeSessions } from './claudeWatcher';
 
 const SESSIONS_KEY = 'agentdock.sessions';
+const COHORTS_KEY = 'agentdock.cohorts';
 
 interface PersistedSession {
     name: string;
-    categoryId: string;
+    cohortId: string;
     note: string;
     status: string;
 }
 
 export function activate(context: vscode.ExtensionContext) {
     const sessionManager = new SessionManager();
-    const treeProvider = new SessionTreeProvider(sessionManager);
-    const boardProvider = new BoardViewProvider(context, sessionManager);
+    const cohortManager = new CohortManager();
+    const treeProvider = new SessionTreeProvider(sessionManager, cohortManager);
+    const boardProvider = new BoardViewProvider(context, sessionManager, cohortManager);
 
-    // Restore sessions saved from last run
+    const savedCohorts = context.workspaceState.get<Cohort[]>(COHORTS_KEY, []);
+    cohortManager.load(savedCohorts);
+
     const saved = context.workspaceState.get<PersistedSession[]>(SESSIONS_KEY, []);
     for (const s of saved) {
-        const cat = CATEGORIES.find(c => c.id === s.categoryId) ?? CATEGORIES[CATEGORIES.length - 1];
-        // Reuse an existing terminal with the same name if VS Code persisted it
         const existing = vscode.window.terminals.find(t => t.name === s.name);
         const terminal = existing ?? vscode.window.createTerminal({
-            name: s.name,
-            iconPath: new vscode.ThemeIcon(cat.icon),
+            name: s.name
         });
         if (!existing) {
             terminal.sendText('claude');
         }
-        const session = sessionManager.add(s.name, s.categoryId, terminal);
+        const session = sessionManager.add(s.name, s.cohortId, terminal);
         if (s.note) { sessionManager.setNote(session.id, s.note); }
         if (s.status && s.status !== 'active') {
             sessionManager.setStatus(session.id, s.status as import('./models/session').SessionStatus);
         }
     }
 
-    // Auto-save on every change
     context.subscriptions.push(
         sessionManager.onDidChange(() => {
             const data: PersistedSession[] = sessionManager.getAll().map(s => ({
                 name: s.name,
-                categoryId: s.categoryId,
+                cohortId: s.cohortId,
                 note: s.note,
                 status: s.status,
             }));
             context.workspaceState.update(SESSIONS_KEY, data);
+        })
+    );
+
+    context.subscriptions.push(
+        cohortManager.onDidChange(() => {
+            context.workspaceState.update(COHORTS_KEY, cohortManager.getUserCohorts());
         })
     );
 
@@ -71,9 +77,10 @@ export function activate(context: vscode.ExtensionContext) {
 
             if (!isCodingAgentTerminal) { return; }
 
+            const cohorts = cohortManager.getAll();
             const picked = await vscode.window.showQuickPick(
-                CATEGORIES.map(c => ({ label: `$(${c.icon}) ${c.label}`, id: c.id })),
-                { placeHolder: `Add "${name}" to Agent Dock — pick a category (Escape to skip)` }
+                cohorts.map(c => ({ label: c.label, id: c.id })),
+                { placeHolder: `Add "${name}" to Agent Dock — pick a cohort (Escape to skip)` }
             );
             if (!picked) { return; }
 
@@ -86,8 +93,9 @@ export function activate(context: vscode.ExtensionContext) {
         if (!terminal) { return; }
         if (sessionManager.getAll().some(s => s.terminal === terminal)) { return; }
 
+        const cohorts = cohortManager.getAll();
         const picked = await vscode.window.showQuickPick(
-            CATEGORIES.map(c => ({ label: `$(${c.icon}) ${c.label}`, id: c.id })),
+            cohorts.map(c => ({ label: c.label, id: c.id })),
             { placeHolder: 'New Claude session detected — add to Agent Dock? (Escape to skip)' }
         );
         if (!picked) { return; }
@@ -107,19 +115,18 @@ export function activate(context: vscode.ExtensionContext) {
             });
             if (!name) { return; }
 
+            const cohort = cohortManager.getAll();
             const picked = await vscode.window.showQuickPick(
-                CATEGORIES.map(c => ({ label: `$(${c.icon}) ${c.label}`, id: c.id })),
-                { placeHolder: 'Select a category' }
+                cohort.map(c => ({ label: c.label, id: c.id })),
+                { placeHolder: 'Select a cohort' }
             );
             if (!picked) { return; }
 
             const terminal = vscode.window.createTerminal({
-                name,
-                iconPath: new vscode.ThemeIcon(CATEGORIES.find(c => c.id === picked.id)!.icon),
+                name
             });
             terminal.show();
             terminal.sendText('claude');
-
             sessionManager.add(name, picked.id, terminal);
         })
     );

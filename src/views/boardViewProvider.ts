@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { SessionManager } from '../managers/sessionManager';
-import { CATEGORIES } from '../constants/categories';
+import { CohortManager } from '../managers/cohortManager';
 import { serializeSession, WebviewMessage, ExtensionMessage } from '../utils/messageProtocol';
 
 export class BoardViewProvider implements vscode.WebviewViewProvider {
@@ -13,6 +13,7 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
     constructor(
         private readonly _context: vscode.ExtensionContext,
         private readonly _sessionManager: SessionManager,
+        private readonly _cohortManager: CohortManager,
     ) {}
 
     private get _extensionUri() { return this._context.extensionUri; }
@@ -37,9 +38,8 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
             this._handleMessage(message);
         });
 
-        this._sessionManager.onDidChange(() => {
-            this._postStateUpdate();
-        });
+        this._sessionManager.onDidChange(() => this._postStateUpdate());
+        this._cohortManager.onDidChange(() => this._postStateUpdate());
 
         vscode.window.onDidChangeActiveTerminal((terminal) => {
             if (!terminal) { return; }
@@ -85,7 +85,7 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 break;
             }
             case 'moveSession': {
-                this._sessionManager.setCategory(message.sessionId, message.newCategoryId);
+                this._sessionManager.setCohort(message.sessionId, message.newCohortId);
                 break;
             }
             case 'setNote': {
@@ -100,6 +100,23 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 vscode.commands.executeCommand('agentdock.newSession');
                 break;
             }
+            case 'createCohort': {
+                this._cohortManager.add(message.label);
+                break;
+            }
+            case 'renameCohort': {
+                this._cohortManager.rename(message.cohortId, message.newLabel);
+                break;
+            }
+            case 'deleteCohort': {
+                for (const s of this._sessionManager.getAll()) {
+                    if (s.cohortId === message.cohortId) {
+                        this._sessionManager.setCohort(s.id, 'uncategorized');
+                    }
+                }
+                this._cohortManager.remove(message.cohortId);
+                break;
+            }
         }
     }
 
@@ -107,12 +124,7 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
         const msg: ExtensionMessage = {
             command: 'stateUpdate',
             sessions: this._sessionManager.getAll().map(serializeSession),
-            categories: CATEGORIES.map(c => ({
-                id: c.id,
-                label: c.label,
-                icon: c.icon,
-                color: c.color,
-            })),
+            cohorts: this._cohortManager.getAll().map(c => ({ id: c.id, label: c.label })),
         };
         this._view?.webview.postMessage(msg);
         for (const wv of this._panelWebviews) {
@@ -142,14 +154,11 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
         }
 
         let html = fs.readFileSync(indexHtmlPath, 'utf-8');
-
-         // Vite builds with base './' — rewrite to proper webview URIs
         const assetsUri = webview.asWebviewUri(
             vscode.Uri.joinPath(distPath, 'assets')
         ).toString();
         html = html.replace(/\.\/assets\//g, `${assetsUri}/`);
 
-        // Inject Content-Security-Policy
         const csp = [
             `default-src 'none'`,
             `script-src ${webview.cspSource}`,
