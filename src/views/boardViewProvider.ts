@@ -8,11 +8,14 @@ import { serializeSession, WebviewMessage, ExtensionMessage } from '../utils/mes
 export class BoardViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'agentdock.boardView';
     private _view?: vscode.WebviewView;
+    private _panelWebviews = new Set<vscode.Webview>();
 
     constructor(
-        private readonly _extensionUri: vscode.Uri,
+        private readonly _context: vscode.ExtensionContext,
         private readonly _sessionManager: SessionManager,
     ) {}
+
+    private get _extensionUri() { return this._context.extensionUri; }
 
     resolveWebviewView(
         webviewView: vscode.WebviewView,
@@ -28,7 +31,7 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
             ],
         };
 
-        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
 
         webviewView.webview.onDidReceiveMessage((message: WebviewMessage) => {
             this._handleMessage(message);
@@ -36,6 +39,21 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
 
         this._sessionManager.onDidChange(() => {
             this._postStateUpdate();
+        });
+
+        vscode.window.onDidChangeActiveTerminal((terminal) => {
+            if (!terminal) { return; }
+            const session = this._sessionManager.getAll().find(s => s.terminal === terminal);
+            if (session) {
+                this._view?.webview.postMessage({ command: 'sessionFocused', sessionId: session.id });
+            }
+        });
+
+        vscode.window.onDidCloseTerminal((closed) => {
+            const session = this._sessionManager.getAll().find(s => s.terminal === closed);
+            if (session) {
+                this._view?.webview.postMessage({ command: 'sessionClosed', sessionId: session.id });
+            }
         });
     }
 
@@ -86,8 +104,6 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
     }
 
     private _postStateUpdate(): void {
-        if (!this._view) { return; }
-
         const msg: ExtensionMessage = {
             command: 'stateUpdate',
             sessions: this._sessionManager.getAll().map(serializeSession),
@@ -98,10 +114,23 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 color: c.color,
             })),
         };
-        this._view.webview.postMessage(msg);
+        this._view?.webview.postMessage(msg);
+        for (const wv of this._panelWebviews) {
+            wv.postMessage(msg);
+        }
     }
 
-    private _getHtmlForWebview(webview: vscode.Webview): string {
+    public wirePanel(panel: vscode.WebviewPanel): void {
+        this._panelWebviews.add(panel.webview);
+        panel.webview.onDidReceiveMessage((message: WebviewMessage) => {
+            this._handleMessage(message);
+        });
+        panel.onDidDispose(() => {
+            this._panelWebviews.delete(panel.webview);
+        });
+    }
+
+    public getHtmlForWebview(webview: vscode.Webview): string {
         const distPath = vscode.Uri.joinPath(this._extensionUri, 'webview-ui', 'dist');
         const indexHtmlPath = path.join(distPath.fsPath, 'index.html');
 
@@ -135,5 +164,11 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
         );
 
         return html;
+    }
+
+    dispose() {
+        for (const session of this._sessionManager.getAll()) {
+            session.terminal.dispose();
+        }
     }
 }

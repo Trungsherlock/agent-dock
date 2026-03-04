@@ -55,6 +55,11 @@
       {
         "command": "agentdock.focusSession",
         "title": "Switch Agent Session"
+      },
+      {
+        "command": "agentdock.openPanel",
+        "title": "Open Agent Dock Panel",
+        "icon": "$(multiple-windows)"
       }
     ],
     "menus": {
@@ -62,6 +67,11 @@
         {
           "command": "agentdock.newSession",
           "when": "view == agentdock.sessionsView",
+          "group": "navigation"
+        },
+        {
+          "command": "agentdock.openPanel",
+          "when": "view == agentdock.boardView",
           "group": "navigation"
         }
       ],

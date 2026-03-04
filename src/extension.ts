@@ -4,6 +4,7 @@ import { SessionTreeProvider } from './views/sessionTreeProvider';
 import { SessionTreeItem } from './views/sessionTreeItem';
 import { BoardViewProvider } from './views/boardViewProvider';
 import { CATEGORIES } from './constants/categories';
+import { watchForNewClaudeSessions } from './claudeWatcher';
 
 const SESSIONS_KEY = 'agentdock.sessions';
 
@@ -17,7 +18,7 @@ interface PersistedSession {
 export function activate(context: vscode.ExtensionContext) {
     const sessionManager = new SessionManager();
     const treeProvider = new SessionTreeProvider(sessionManager);
-    const boardProvider = new BoardViewProvider(context.extensionUri, sessionManager);
+    const boardProvider = new BoardViewProvider(context, sessionManager);
 
     // Restore sessions saved from last run
     const saved = context.workspaceState.get<PersistedSession[]>(SESSIONS_KEY, []);
@@ -58,6 +59,42 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.registerWebviewViewProvider(BoardViewProvider.viewType, boardProvider)
     );
 
+    context.subscriptions.push(
+        vscode.window.onDidOpenTerminal(async terminal => {
+            if (sessionManager.getAll().some(s => s.terminal === terminal)) { return; }
+            const name = terminal.name;
+            const isCodingAgentTerminal =
+                /claude/i.test(name) ||
+                /aider/i.test(name) ||
+                /cursor/i.test(name) ||
+                /cody/i.test(name);
+
+            if (!isCodingAgentTerminal) { return; }
+
+            const picked = await vscode.window.showQuickPick(
+                CATEGORIES.map(c => ({ label: `$(${c.icon}) ${c.label}`, id: c.id })),
+                { placeHolder: `Add "${name}" to Agent Dock — pick a category (Escape to skip)` }
+            );
+            if (!picked) { return; }
+
+            sessionManager.add(name, picked.id, terminal);
+        })
+    );
+
+    watchForNewClaudeSessions(context, async () => {
+        const terminal = vscode.window.activeTerminal;
+        if (!terminal) { return; }
+        if (sessionManager.getAll().some(s => s.terminal === terminal)) { return; }
+
+        const picked = await vscode.window.showQuickPick(
+            CATEGORIES.map(c => ({ label: `$(${c.icon}) ${c.label}`, id: c.id })),
+            { placeHolder: 'New Claude session detected — add to Agent Dock? (Escape to skip)' }
+        );
+        if (!picked) { return; }
+
+        sessionManager.add(terminal.name, picked.id, terminal);
+    });
+
     vscode.window.onDidCloseTerminal(terminal => {
         sessionManager.removeByTerminal(terminal);
     }, null, context.subscriptions);
@@ -84,6 +121,29 @@ export function activate(context: vscode.ExtensionContext) {
             terminal.sendText('claude');
 
             sessionManager.add(name, picked.id, terminal);
+        })
+    );
+
+    let agentDockPanel: vscode.WebviewPanel | undefined;
+    context.subscriptions.push(
+        vscode.commands.registerCommand('agentdock.openPanel', () => {
+            if (agentDockPanel) {
+                agentDockPanel.reveal();
+                return;
+            }
+            agentDockPanel = vscode.window.createWebviewPanel(
+                'agentdock.panel',
+                'Agent Dock',
+                vscode.ViewColumn.Beside,
+                {
+                    enableScripts: true,
+                    retainContextWhenHidden: true,
+                    localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'webview-ui', 'dist')],
+                }
+            );
+            agentDockPanel.webview.html = boardProvider.getHtmlForWebview(agentDockPanel.webview);
+            boardProvider.wirePanel(agentDockPanel);
+            agentDockPanel.onDidDispose(() => { agentDockPanel = undefined; });
         })
     );
 
