@@ -75,17 +75,14 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.window.onDidOpenTerminal(async terminal => {
+        vscode.window.onDidOpenTerminal(terminal => {
             if (sessionManager.getAll().some(s => s.terminal === terminal)) { return; }
             const name = terminal.name;
-            const isCodingAgentTerminal =
-                /claude/i.test(name) ||
+            const isNonClaudeAgent =
                 /aider/i.test(name) ||
                 /cursor/i.test(name) ||
                 /cody/i.test(name);
-
-            if (!isCodingAgentTerminal) { return; }
-
+            if (!isNonClaudeAgent) { return; }
             sessionManager.add(name, 'uncategorized', terminal);
         })
     );
