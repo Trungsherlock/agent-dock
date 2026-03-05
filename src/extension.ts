@@ -5,6 +5,7 @@ import { SessionTreeProvider } from './views/sessionTreeProvider';
 import { SessionTreeItem } from './views/sessionTreeItem';
 import { BoardViewProvider } from './views/boardViewProvider';
 import { watchForNewClaudeSessions } from './claudeWatcher';
+import { ClaudeLogWatcher } from './watchers/claudeLogWatcher';
 
 const SESSIONS_KEY = 'agentdock.sessions';
 const COHORTS_KEY = 'agentdock.cohorts';
@@ -14,6 +15,7 @@ interface PersistedSession {
     cohortId: string;
     note: string;
     status: string;
+    claudeLogFile?: string;
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -39,6 +41,12 @@ export function activate(context: vscode.ExtensionContext) {
         if (s.status && s.status !== 'active') {
             sessionManager.setStatus(session.id, s.status as import('./models/session').SessionStatus);
         }
+
+        if (s.claudeLogFile) {
+            session.claudeLogFile = s.claudeLogFile;
+            const watcher = new ClaudeLogWatcher(session.id, s.claudeLogFile, sessionManager);
+            context.subscriptions.push({ dispose: () => watcher.dispose() });
+        }
     }
 
     context.subscriptions.push(
@@ -48,6 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
                 cohortId: s.cohortId,
                 note: s.note,
                 status: s.status,
+                claudeLogFile: s.claudeLogFile,
             }));
             context.workspaceState.update(SESSIONS_KEY, data);
         })
@@ -77,30 +86,19 @@ export function activate(context: vscode.ExtensionContext) {
 
             if (!isCodingAgentTerminal) { return; }
 
-            const cohorts = cohortManager.getAll();
-            const picked = await vscode.window.showQuickPick(
-                cohorts.map(c => ({ label: c.label, id: c.id })),
-                { placeHolder: `Add "${name}" to Agent Dock — pick a cohort (Escape to skip)` }
-            );
-            if (!picked) { return; }
-
-            sessionManager.add(name, picked.id, terminal);
+            sessionManager.add(name, 'uncategorized', terminal);
         })
     );
 
-    watchForNewClaudeSessions(context, async () => {
+    watchForNewClaudeSessions(context, async (filePath: string) => {
         const terminal = vscode.window.activeTerminal;
         if (!terminal) { return; }
         if (sessionManager.getAll().some(s => s.terminal === terminal)) { return; }
 
-        const cohorts = cohortManager.getAll();
-        const picked = await vscode.window.showQuickPick(
-            cohorts.map(c => ({ label: c.label, id: c.id })),
-            { placeHolder: 'New Claude session detected — add to Agent Dock? (Escape to skip)' }
-        );
-        if (!picked) { return; }
-
-        sessionManager.add(terminal.name, picked.id, terminal);
+        const session = sessionManager.add(terminal.name, 'uncategorized', terminal);
+        session.claudeLogFile = filePath;
+        const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager);
+        context.subscriptions.push({ dispose: () => watcher.dispose() });
     });
 
     vscode.window.onDidCloseTerminal(terminal => {

@@ -35,6 +35,7 @@ export function Board() {
 
   return (
     <div className="flex flex-col gap-2 p-3 overflow-y-auto h-full">
+      <StatusBar />
       <DragDropContext onDragEnd={onDragEnd}>
         {state.listOrder.length === 0 && !adding ? (
           <div
@@ -88,3 +89,63 @@ export function Board() {
     </div>
   );
 }
+
+function StatusBar() {
+  const { state } = useBoardContext();
+  const cards = Object.values(state.cards);
+
+  if (cards.length === 0) {
+    return null;
+  }
+
+  const active = cards.filter((c) => c.status === "active").length;
+  const done = cards.filter((c) => c.status === "done").length;
+  const tokens = cards.reduce(
+    (sum, c) => sum + c.tokensInput + c.tokensOutput,
+    0,
+  );
+  const cost = cards.reduce((sum, c) => sum + c.costUsd, 0);
+
+  return (
+    <div
+      className="flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs mb-2 flex-wrap"
+      style={{
+        background: "var(--vscode-badge-background)",
+        color: "var(--vscode-badge-foreground)",
+      }}
+    >
+      {active > 0 && (
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          {active} running
+        </span>
+      )}
+      {done > 0 && (
+        <span style={{ color: "var(--vscode-descriptionForeground)" }}>
+          ✓ {done} done
+        </span>
+      )}
+      {tokens > 0 && (
+        <span style={{ color: "var(--vscode-descriptionForeground)" }}>
+          {formatTokens(tokens)}
+        </span>
+      )}
+      {cost > 0 && (
+        <span style={{ color: "var(--vscode-descriptionForeground)" }}>
+          ${cost.toFixed(3)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) {
+    return `${(n / 1_000_000).toFixed(1)}M tok`;
+  }
+  if (n >= 1_000) {
+    return `${(n / 1_000).toFixed(1)}k tok`;
+  }
+  return `${n} tok`;
+}
+

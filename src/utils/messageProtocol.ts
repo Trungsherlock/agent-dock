@@ -1,4 +1,4 @@
-import { SessionStatus } from '../models/session';
+import { SessionStatus, ToolCall } from '../models/session';
 
 export interface SerializeSession {
     id: string;
@@ -7,6 +7,16 @@ export interface SerializeSession {
     status: SessionStatus;
     createdAt: string;
     note: string;
+    framework: string;
+    currentTask?: string;
+    filesTouched: string[];
+    toolCalls: ToolCall[];
+    tokensInput: number;
+    tokensOutput: number;
+    costUsd: number;
+    contextWindowUsed: number;
+    contextWindowMax: number;
+    updatedAt: string;
 }
 
 export interface SerializedCohort {
@@ -40,5 +50,15 @@ export function serializeSession(s: import('../models/session').Session): Serial
         status: s.status,
         createdAt: s.createdAt.toISOString(),
         note: s.note,
+        framework: s.framework,
+        currentTask: s.currentTask,
+        filesTouched: s.filesTouched,
+        toolCalls: s.toolCalls,
+        tokensInput: s.tokensInput,
+        tokensOutput: s.tokensOutput,
+        costUsd: s.costUsd,
+        contextWindowUsed: s.contextWindowUsed,
+        contextWindowMax: s.contextWindowMax,
+        updatedAt: s.updatedAt.toISOString(),
     };
 }

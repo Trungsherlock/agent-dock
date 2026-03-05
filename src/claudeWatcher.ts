@@ -19,7 +19,7 @@ function getClaudeProjectDirs(): string[] {
 function scanForNewFiles(
     dirs: string[],
     knownFiles: Set<string>,
-    onNewSession: () => void,
+    onNewSession: (filePath: string) => void,
 ): void {
     for (const dir of dirs) {
         let files: string[];
@@ -32,7 +32,7 @@ function scanForNewFiles(
         for (const file of files) {
             if (!knownFiles.has(file)) {
                 knownFiles.add(file);
-                onNewSession();
+                onNewSession(file);
             }
         }
     }
@@ -40,7 +40,7 @@ function scanForNewFiles(
 
 export function watchForNewClaudeSessions(
     context: vscode.ExtensionContext,
-    onNewSession: () => void,
+    onNewSession: (filePath: string) => void,
 ): void {
     const dirs = getClaudeProjectDirs();
     if (dirs.length === 0) { return; }
@@ -55,7 +55,7 @@ export function watchForNewClaudeSessions(
                 scanForNewFiles(getClaudeProjectDirs(), knownFiles, onNewSession);
             });
             fsWatchers.push(w);
-        } catch { /* fs.watch not supported, polling will cover it */ }
+        } catch {}
     }
 
     const pollTimer = setInterval(() => {

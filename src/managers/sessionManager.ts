@@ -15,6 +15,15 @@ export class SessionManager {
             createdAt: new Date(),
             terminal,
             note: '',
+            framework: 'claude',
+            filesTouched: [],
+            toolCalls: [],
+            tokensInput: 0,
+            tokensOutput: 0,
+            costUsd: 0,
+            contextWindowUsed: 0,
+            contextWindowMax: 200000,
+            updatedAt: new Date(),
         };
         this.sessions.push(session);
         this._onDidChange.fire();
@@ -67,6 +76,18 @@ export class SessionManager {
         const session = this.getById(id);
         if (session) {
             session.note = note;
+            this._onDidChange.fire();
+        }
+    }
+
+    updateMetrics(id: string, patch: Partial<Pick<Session,
+        'currentTask' | 'filesTouched' | 'toolCalls' |
+        'tokensInput' | 'tokensOutput' | 'costUsd' |
+        'contextWindowUsed' | 'pid' | 'status'
+    >>): void {
+        const session = this.getById(id);
+        if (session) {
+            Object.assign(session, patch, { updatedAt: new Date() });
             this._onDidChange.fire();
         }
     }

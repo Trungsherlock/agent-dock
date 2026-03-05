@@ -7,6 +7,24 @@ export interface SerializedSession {
     status: SessionStatus;
     createdAt: string;
     note: string;
+    framework: string;
+    currentTask?: string;
+    filesTouched: string[];
+    toolCalls: {
+        id: string;
+        name: string;
+        input: string;
+        output?: string;
+        status: 'running' | 'done' | 'error';
+        startedAt: number;
+        durationMs?: number;
+    }[];
+    tokensInput: number;
+    tokensOutput: number;
+    costUsd: number;
+    contextWindowUsed: number;
+    contextWindowMax: number;
+    updatedAt: string;
 }
 
 export interface SerializedCohort {
