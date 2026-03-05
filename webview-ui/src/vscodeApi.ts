@@ -4,5 +4,8 @@ declare function acquireVsCodeApi(): {
     setState(state: unknown): void;
 };
 
-const vscode = acquireVsCodeApi();
+const vscode = typeof acquireVsCodeApi === 'function'
+    ? acquireVsCodeApi()
+    : { postMessage: () => {}, getState: () => null, setState: () => {} };
+
 export default vscode;

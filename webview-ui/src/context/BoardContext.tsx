@@ -33,7 +33,127 @@ export interface BoardState {
   listOrder: string[];
 }
 
-const empty: BoardState = { lists: {}, cards: {}, listOrder: [] };
+// const empty: BoardState = { lists: {}, cards: {}, listOrder: [] };
+const MOCK_STATE: BoardState = {
+  listOrder: ["uncategorized", "cohort-auth"],
+  lists: {
+    uncategorized: {
+      id: "uncategorized",
+      title: "Uncategorized",
+      color: "#6b7280",
+      cardIds: ["session-999"],
+    },
+    "cohort-auth": {
+      id: "cohort-auth",
+      title: "Auth Refactor",
+      color: "#3b82f6",
+      cardIds: ["session-001", "session-002"],
+    },
+  },
+  cards: {
+    "session-999": {
+      id: "session-999",
+      name: "Idle Agent",
+      cohortId: "uncategorized",
+      status: "idle",
+      framework: "claude",
+      note: "",
+      createdAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+      updatedAt: new Date().toISOString(),
+      currentTask: undefined,
+      filesTouched: [],
+      toolCalls: [],
+      tokensInput: 0,
+      tokensOutput: 0,
+      costUsd: 0,
+      contextWindowUsed: 0,
+      contextWindowMax: 200000,
+    },
+    "session-001": {
+      id: "session-001",
+      name: "JWT Fixer",
+      cohortId: "cohort-auth",
+      status: "active",
+      framework: "claude",
+      note: "",
+      createdAt: new Date(Date.now() - 1000 * 60 * 4 - 32000).toISOString(),
+      updatedAt: new Date().toISOString(),
+      currentTask: "Writing fix for missing expiry check on line 42",
+      filesTouched: [
+        "src/auth/login.ts",
+        "src/auth/types.ts",
+        "src/auth/middleware.ts",
+      ],
+      toolCalls: [
+        {
+          id: "t1",
+          name: "Read",
+          input: JSON.stringify({ file_path: "src/auth/login.ts" }),
+          status: "done",
+          startedAt: Date.now() - 5000,
+          durationMs: 120,
+        },
+        {
+          id: "t2",
+          name: "Bash",
+          input: JSON.stringify({ command: 'grep -n "jwt" login.ts' }),
+          status: "done",
+          startedAt: Date.now() - 4000,
+          durationMs: 45,
+        },
+        {
+          id: "t3",
+          name: "Write",
+          input: JSON.stringify({ file_path: "src/auth/login.ts" }),
+          status: "running",
+          startedAt: Date.now() - 500,
+        },
+      ],
+      tokensInput: 11200,
+      tokensOutput: 1240,
+      costUsd: 0.038,
+      contextWindowUsed: 11200,
+      contextWindowMax: 200000,
+    },
+    "session-002": {
+      id: "session-002",
+      name: "Session Fix",
+      cohortId: "cohort-auth",
+      status: "done",
+      framework: "claude",
+      note: "",
+      createdAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+      updatedAt: new Date().toISOString(),
+      currentTask: "Fixed session expiry handler",
+      filesTouched: ["src/auth/session.ts"],
+      toolCalls: [
+        {
+          id: "t4",
+          name: "Read",
+          input: JSON.stringify({ file_path: "src/auth/session.ts" }),
+          status: "done",
+          startedAt: Date.now() - 60000,
+          durationMs: 88,
+        },
+        {
+          id: "t5",
+          name: "Edit",
+          input: JSON.stringify({ file_path: "src/auth/session.ts" }),
+          status: "done",
+          startedAt: Date.now() - 59000,
+          durationMs: 210,
+        },
+      ],
+      tokensInput: 4800,
+      tokensOutput: 620,
+      costUsd: 0.014,
+      contextWindowUsed: 4800,
+      contextWindowMax: 200000,
+    },
+  },
+};
+
+const empty: BoardState = MOCK_STATE;
 
 type Action =
   | { type: "SYNC"; sessions: SerializedSession[]; cohorts: SerializedCohort[] }

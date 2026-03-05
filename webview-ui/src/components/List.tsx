@@ -48,8 +48,8 @@ export function List({ list }: ListProps) {
   return (
     <>
       <div
-        className="flex flex-col w-full rounded-2xl shadow-md"
-        style={{ backgroundColor: "#ffffff" }}
+        className="flex flex-col w-full rounded-lg shadow-md"
+        style={{ backgroundColor: "#1e1e2e", border: "1px solid #2a2a3e" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-3 pb-2">
@@ -59,9 +59,9 @@ export function List({ list }: ListProps) {
               autoFocus
               className="flex-1 text-sm font-bold rounded px-1 border"
               style={{
-                color: "#1f2937",
+                color: "#e2e8f0",
                 background: "transparent",
-                borderColor: "#d1d5db",
+                borderColor: "#3d3d5c",
               }}
               value={editLabel}
               onChange={(e) => setEditLabel(e.target.value)}
@@ -75,7 +75,7 @@ export function List({ list }: ListProps) {
             <span
               className="text-sm font-bold select-none"
               style={{
-                color: "#1f2937",
+                color: "#e2e8f0",
                 cursor: isUncategorized ? "default" : "pointer",
               }}
               onDoubleClick={startEdit}
@@ -88,7 +88,7 @@ export function List({ list }: ListProps) {
             <button
               onClick={handleDelete}
               className="ml-2 text-xs leading-none transition-opacity hover:opacity-60"
-              style={{ color: "#9ca3af" }}
+              style={{ color: "#6b7a99" }}
               title="Delete cohort"
             >
               ✕
@@ -114,7 +114,7 @@ export function List({ list }: ListProps) {
               {cards.length === 0 && !snapshot.isDraggingOver && (
                 <div
                   className="text-xs text-center py-3 italic"
-                  style={{ color: "#9ca3af" }}
+                  style={{ color: "#6b7a99" }}
                 >
                   No agents here
                 </div>
@@ -136,12 +136,12 @@ export function List({ list }: ListProps) {
         {/* Footer */}
         <div
           className="flex items-center justify-between px-4 py-2 mt-1"
-          style={{ borderTop: "1px solid #f3f4f6" }}
+          style={{ borderTop: "1px solid #2a2a3e" }}
         >
           <button
             onClick={newSession}
             className="flex items-center gap-1.5 text-xs transition-opacity hover:opacity-60"
-            style={{ color: "#6b7280" }}
+            style={{ color: "#8892a4" }}
           >
             <span className="text-base leading-none">+</span>
             <span>Add a card</span>
