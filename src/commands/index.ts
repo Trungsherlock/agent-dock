@@ -19,7 +19,7 @@ export function registerCommands(
         if (sessionManager.getAll().some(s => s.terminal === terminal)) { return; }
 
         const session = sessionManager.add(terminal.name, 'uncategorized', terminal);
-        session.claudeLogFile = filePath;
+        sessionManager.setClaudeLogFile(session.id, filePath);
         const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager);
         context.subscriptions.push({ dispose: () => watcher.dispose() });
     });

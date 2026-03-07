@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import { SessionManager } from './sessionManager';
 import { CohortManager, type Cohort } from './cohortManager';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
@@ -20,7 +21,7 @@ export function loadSessions(
             if (s.status && s.status !== 'active') {
                 sessionManager.setStatus(session.id, s.status as SessionStatus);
             }
-            session.claudeLogFile = s.claudeLogFile;
+            sessionManager.setClaudeLogFile(session.id, s.claudeLogFile);
             const watcher = new ClaudeLogWatcher(session.id, s.claudeLogFile, sessionManager, true);
             context.subscriptions.push({ dispose: () => watcher.dispose() });
         } else {
@@ -78,9 +79,10 @@ export function loadHistoricalSessions(
     for (const filePath of workspacePath ? getAllClaudeLogFiles(workspacePath) : []) {
         if (trackedFiles.has(filePath)) { continue; }
         const name = path.basename(filePath, '.jsonl').slice(0, 8);
-        const session = sessionManager.add(name, 'uncategorized');
-        session.claudeLogFile = filePath;
-        session.status = 'done';
+        const birthtime = fs.statSync(filePath).birthtime;
+        const session = sessionManager.add(name, 'uncategorized', undefined, birthtime);
+        sessionManager.setClaudeLogFile(session.id, filePath);
+        sessionManager.setStatus(session.id, 'done');
         const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager, true);
         context.subscriptions.push({ dispose: () => watcher.dispose() });
     }

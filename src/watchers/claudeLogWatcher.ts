@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { SessionManager } from '../managers/sessionManager';
 import { processTranscriptLine } from '../parsers/transcriptParser';
 
-const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_MS = 1000;
 const IDLE_TO_DONE_MS = 10000;
 
 export class ClaudeLogWatcher {

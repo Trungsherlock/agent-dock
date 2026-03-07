@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import type { BoardCard, BoardList } from "../context/BoardContext";
 import { useBoardContext } from "../context/useBoardContext";
@@ -56,9 +56,11 @@ export function Card({ card, list, index, onClick }: CardProps) {
   const { focusSession } = useBoardContext();
   const [, setTick] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const runStartedAt = useRef<number>(0);
 
   useEffect(() => {
     if (card.status !== "active") return;
+    runStartedAt.current = Date.now();
     const timer = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(timer);
   }, [card.status]);
@@ -84,10 +86,6 @@ export function Card({ card, list, index, onClick }: CardProps) {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          onClick={() => {
-            focusSession(card.id);
-            if (hasTools) setExpanded((e) => !e);
-          }}
           style={{
             ...provided.draggableProps.style,
             opacity: snapshot.isDragging ? 0.85 : 1,
@@ -105,6 +103,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
           <div style={{ height: "3px", backgroundColor: list.color }} />
 
           <div
+            onClick={() => focusSession(card.id)}
             style={{
               padding: "10px 12px",
               display: "flex",
@@ -183,7 +182,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
                 </span>
                 {statusStyle.label}
               </span>
-              <span>{formatDuration(card.createdAt)}</span>
+              <span>{card.status === "active" && runStartedAt.current > 0 ? formatDuration(new Date(runStartedAt.current).toISOString()) : formatDuration(card.createdAt)}</span>
               <span
                 style={{
                   padding: "1px 6px",
@@ -359,6 +358,29 @@ export function Card({ card, list, index, onClick }: CardProps) {
                   {card.filesTouched.slice(-5).join(" · ")}
                 </div>
               </div>
+            )}
+
+            {/* Expand toggle */}
+            {hasTools && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpanded((prev) => !prev);
+                }}
+                style={{
+                  fontSize: "9px",
+                  color: "#6b7a99",
+                  textAlign: "center",
+                  marginTop: "-2px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  width: "100%",
+                  padding: "2px 0",
+                }}
+              >
+                {expanded ? "▲" : "▼"}
+              </button>
             )}
           </div>
         </div>

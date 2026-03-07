@@ -7,13 +7,13 @@ export class SessionManager {
     readonly onDidChange = this._onDidChange.event;
     private _counter = 0;
 
-    add(name: string, cohortId: string, terminal?: vscode.Terminal): Session {
+    add(name: string, cohortId: string, terminal?: vscode.Terminal, createdAt?: Date): Session {
         const session: Session = {
             id: `session-${Date.now()}-${this._counter++}`,
             name,
             cohortId,
             status: 'active',
-            createdAt: new Date(),
+            createdAt: createdAt ?? new Date(),
             terminal,
             note: '',
             framework: 'claude',
@@ -69,6 +69,14 @@ export class SessionManager {
         const session = this.getById(id);
         if (session) {
             session.status = status;
+            this._onDidChange.fire();
+        }
+    }
+
+    setClaudeLogFile(id: string, logFile: string): void {
+        const session = this.getById(id);
+        if (session) {
+            session.claudeLogFile = logFile;
             this._onDidChange.fire();
         }
     }
