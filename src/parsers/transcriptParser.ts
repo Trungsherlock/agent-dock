@@ -27,29 +27,30 @@ interface ClaudeEntry {
     };
 }
 
+/** Returns true when a turn_duration record is processed (turn complete). */
 export function processTranscriptLine(
     raw: string,
     sessionId: string,
     sessionManager: SessionManager,
     skipStatus: boolean,
-): void {
+): boolean {
     let entry: ClaudeEntry;
-    try { entry = JSON.parse(raw); } catch { return; }
+    try { entry = JSON.parse(raw); } catch { return false; }
 
     if (entry.type === 'system' && entry.subtype === 'turn_duration') {
         sessionManager.updateMetrics(sessionId, { status: 'done' });
-        return;
+        return true;
     }
 
-    if (entry.type !== 'assistant') { return; }
+    if (entry.type !== 'assistant') { return false; }
 
     const content = entry.message?.content;
-    if (!Array.isArray(content)) { return; }
+    if (!Array.isArray(content)) { return false; }
 
     if (!skipStatus) { sessionManager.updateMetrics(sessionId, { status: 'active'}); }
 
     const session = sessionManager.getById(sessionId);
-    if (!session) { return; }
+    if (!session) { return false; }
 
     let currentTask: string | undefined;
     const newToolCalls: ToolCall[] = [];
@@ -92,4 +93,5 @@ export function processTranscriptLine(
     if (Object.keys(patch).length > 0) {
         sessionManager.updateMetrics(sessionId, patch);
     }
+    return false;
 }
