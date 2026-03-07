@@ -5,10 +5,11 @@ export class SessionManager {
     private sessions: Session[] = [];
     private _onDidChange = new vscode.EventEmitter<void>();
     readonly onDidChange = this._onDidChange.event;
+    private _counter = 0;
 
-    add(name: string, cohortId: string, terminal: vscode.Terminal): Session {
+    add(name: string, cohortId: string, terminal?: vscode.Terminal): Session {
         const session: Session = {
-            id: `session-${Date.now()}`,
+            id: `session-${Date.now()}-${this._counter++}`,
             name,
             cohortId,
             status: 'active',

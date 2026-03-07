@@ -1,22 +1,10 @@
 import * as vscode from 'vscode';
 import { SessionManager } from './managers/sessionManager';
-import { CohortManager, type Cohort } from './managers/cohortManager';
+import { CohortManager } from './managers/cohortManager';
 import { SessionTreeProvider } from './views/sessionTreeProvider';
-import { SessionTreeItem } from './views/sessionTreeItem';
 import { BoardViewProvider } from './views/boardViewProvider';
-import { watchForNewClaudeSessions } from './claudeWatcher';
-import { ClaudeLogWatcher } from './watchers/claudeLogWatcher';
-
-const SESSIONS_KEY = 'agentdock.sessions';
-const COHORTS_KEY = 'agentdock.cohorts';
-
-interface PersistedSession {
-    name: string;
-    cohortId: string;
-    note: string;
-    status: string;
-    claudeLogFile?: string;
-}
+import { loadSessions, loadCohorts, setupPersistence, loadHistoricalSessions } from './managers/sessionLoader';
+import { registerCommands } from './commands/index';
 
 export function activate(context: vscode.ExtensionContext) {
     const sessionManager = new SessionManager();
@@ -24,154 +12,17 @@ export function activate(context: vscode.ExtensionContext) {
     const treeProvider = new SessionTreeProvider(sessionManager, cohortManager);
     const boardProvider = new BoardViewProvider(context, sessionManager, cohortManager);
 
-    const savedCohorts = context.workspaceState.get<Cohort[]>(COHORTS_KEY, []);
-    cohortManager.load(savedCohorts);
-
-    const saved = context.workspaceState.get<PersistedSession[]>(SESSIONS_KEY, []);
-    for (const s of saved) {
-        const existing = vscode.window.terminals.find(t => t.name === s.name);
-        const terminal = existing ?? vscode.window.createTerminal({
-            name: s.name
-        });
-        if (!existing) {
-            terminal.sendText('claude');
-        }
-        const session = sessionManager.add(s.name, s.cohortId, terminal);
-        if (s.note) { sessionManager.setNote(session.id, s.note); }
-        if (s.status && s.status !== 'active') {
-            sessionManager.setStatus(session.id, s.status as import('./models/session').SessionStatus);
-        }
-
-        if (s.claudeLogFile) {
-            session.claudeLogFile = s.claudeLogFile;
-            const watcher = new ClaudeLogWatcher(session.id, s.claudeLogFile, sessionManager);
-            context.subscriptions.push({ dispose: () => watcher.dispose() });
-        }
-    }
-
-    context.subscriptions.push(
-        sessionManager.onDidChange(() => {
-            const data: PersistedSession[] = sessionManager.getAll().map(s => ({
-                name: s.name,
-                cohortId: s.cohortId,
-                note: s.note,
-                status: s.status,
-                claudeLogFile: s.claudeLogFile,
-            }));
-            context.workspaceState.update(SESSIONS_KEY, data);
-        })
-    );
-
-    context.subscriptions.push(
-        cohortManager.onDidChange(() => {
-            context.workspaceState.update(COHORTS_KEY, cohortManager.getUserCohorts());
-        })
-    );
+    loadCohorts(context, cohortManager);
+    loadSessions(context, sessionManager);
+    setupPersistence(context, sessionManager, cohortManager);
+    loadHistoricalSessions(context, sessionManager);
 
     vscode.window.registerTreeDataProvider('agentdock.sessionsView', treeProvider);
-
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(BoardViewProvider.viewType, boardProvider)
     );
 
-    context.subscriptions.push(
-        vscode.window.onDidOpenTerminal(terminal => {
-            if (sessionManager.getAll().some(s => s.terminal === terminal)) { return; }
-            const name = terminal.name;
-            const isNonClaudeAgent =
-                /aider/i.test(name) ||
-                /cursor/i.test(name) ||
-                /cody/i.test(name);
-            if (!isNonClaudeAgent) { return; }
-            sessionManager.add(name, 'uncategorized', terminal);
-        })
-    );
-
-    watchForNewClaudeSessions(context, async (filePath: string) => {
-        const terminal = vscode.window.activeTerminal;
-        if (!terminal) { return; }
-        if (sessionManager.getAll().some(s => s.terminal === terminal)) { return; }
-
-        const session = sessionManager.add(terminal.name, 'uncategorized', terminal);
-        session.claudeLogFile = filePath;
-        const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager);
-        context.subscriptions.push({ dispose: () => watcher.dispose() });
-    });
-
-    vscode.window.onDidCloseTerminal(terminal => {
-        sessionManager.removeByTerminal(terminal);
-    }, null, context.subscriptions);
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('agentdock.newSession', async () => {
-            const name = await vscode.window.showInputBox({
-                prompt: 'Session name',
-                placeHolder: 'e.g. Fix login bug',
-            });
-            if (!name) { return; }
-
-            const cohort = cohortManager.getAll();
-            const picked = await vscode.window.showQuickPick(
-                cohort.map(c => ({ label: c.label, id: c.id })),
-                { placeHolder: 'Select a cohort' }
-            );
-            if (!picked) { return; }
-
-            const terminal = vscode.window.createTerminal({
-                name
-            });
-            terminal.show();
-            terminal.sendText('claude');
-            sessionManager.add(name, picked.id, terminal);
-        })
-    );
-
-    let agentDockPanel: vscode.WebviewPanel | undefined;
-    context.subscriptions.push(
-        vscode.commands.registerCommand('agentdock.openPanel', () => {
-            if (agentDockPanel) {
-                agentDockPanel.reveal();
-                return;
-            }
-            agentDockPanel = vscode.window.createWebviewPanel(
-                'agentdock.panel',
-                'Agent Dock',
-                vscode.ViewColumn.Beside,
-                {
-                    enableScripts: true,
-                    retainContextWhenHidden: true,
-                    localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'webview-ui', 'dist')],
-                }
-            );
-            agentDockPanel.webview.html = boardProvider.getHtmlForWebview(agentDockPanel.webview);
-            boardProvider.wirePanel(agentDockPanel);
-            agentDockPanel.onDidDispose(() => { agentDockPanel = undefined; });
-        })
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('agentdock.focusSession', (item: SessionTreeItem) => {
-            item.session.terminal.show();
-        })
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('agentdock.endSession', (item: SessionTreeItem) => {
-            item.session.terminal.dispose();
-            sessionManager.remove(item.session.id);
-        })
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('agentdock.renameSession', async (item: SessionTreeItem) => {
-            const newName = await vscode.window.showInputBox({
-                prompt: 'New session name',
-                value: item.session.name,
-            });
-            if (!newName) { return; }
-            sessionManager.rename(item.session.id, newName);
-        })
-    );
+    registerCommands(context, sessionManager, cohortManager, boardProvider);
 }
 
 export function deactivate() {}

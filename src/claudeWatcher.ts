@@ -38,6 +38,38 @@ function scanForNewFiles(
     }
 }
 
+function encodeProjectPath(absolutePath: string): string {
+    if (process.platform === 'win32') {
+        return absolutePath
+            .replace(/^([A-Za-z]):/, (_, drive: string) => drive.toLowerCase() + '-')
+            .replace(/[\\/]/g, '-');
+    }
+    return absolutePath.replace(/\//g, '-');
+}
+
+export function getAllClaudeLogFiles(workspacePath?: string): string[] {
+    const projectsRoot = path.join(os.homedir(), '.claude', 'projects');
+    let dirs: string[];
+
+    if (workspacePath) {
+        const encoded = encodeProjectPath(workspacePath);
+        const matched = path.join(projectsRoot, encoded);
+        dirs = fs.existsSync(matched) ? [matched] : [];
+    } else {
+        dirs = getClaudeProjectDirs();
+    }
+
+    const files: string[] = [];
+    for (const dir of dirs) {
+        try {
+            fs.readdirSync(dir)
+                .filter(f => f.endsWith('.jsonl'))
+                .forEach(f => files.push(path.join(dir, f)));
+        } catch {}
+    }
+    return files;
+}
+
 export function watchForNewClaudeSessions(
     context: vscode.ExtensionContext,
     onNewSession: (filePath: string) => void,

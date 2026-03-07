@@ -1,48 +1,36 @@
 import * as fs from 'fs';
 import { SessionManager } from '../managers/sessionManager';
-import { ToolCall } from '../models/session';
+import { processTranscriptLine } from '../parsers/transcriptParser';
 
-const FILE_TOOLS: Record<string, string> = {
-    'Read': 'file_path',
-    'Write': 'file_path', 
-    'Edit': 'file_path',
-    'MultiEdit': 'file_path',
-    'NotebookEdit': 'notebook_path',
-    'NotebookRead': 'notebook_path',
-};
-
-interface ContentBlock {
-    type: 'text' | 'tool_use' | 'tool_result';
-    text?: string;
-    id?: string;
-    name?: string;
-    input?: Record<string, unknown>;
-}
-
-interface ClaudeEntry {
-    type: string;
-    message?: {
-        content?: string | ContentBlock[];
-        usage?: { input_tokens?: number; output_tokens?: number };
-    };
-}
+const POLL_INTERVAL_MS = 2000;
+const IDLE_TO_DONE_MS = 10000;
 
 export class ClaudeLogWatcher {
     private offset = 0;
+    private lineBuffer = '';
     private watcher?: fs.FSWatcher;
+    private pollTimer?: NodeJS.Timeout;
+    private idleTimer?: NodeJS.Timeout;
     private disposed = false;
+    private skipStatus = false;
 
     constructor(
         private readonly sessionId: string,
-        private readonly filePath: string, 
+        private readonly filePath: string,
         private readonly sessionManager: SessionManager,
+        skipInitialStatus = false,
     ) {
+        this.skipStatus = skipInitialStatus;
         this.readNewLines();
+        this.skipStatus = false;
         try {
             this.watcher = fs.watch(this.filePath, () => {
                 if (!this.disposed) { this.readNewLines(); }
             });
         } catch {}
+        this.pollTimer = setInterval(() => {
+            if (!this.disposed) { this.readNewLines(); }
+        }, POLL_INTERVAL_MS);
     }
 
     private readNewLines() {
@@ -50,86 +38,46 @@ export class ClaudeLogWatcher {
             const stat = fs.statSync(this.filePath);
             if (stat.size <= this.offset) { return; }
 
+            // New data arrived — cancel any pending idle-to-done timer
+            clearTimeout(this.idleTimer);
+            this.idleTimer = undefined;
+
             const fd = fs.openSync(this.filePath, 'r');
             const buf = Buffer.alloc(stat.size - this.offset);
             fs.readSync(fd, buf, 0, buf.length, this.offset);
             fs.closeSync(fd);
             this.offset = stat.size;
 
-            const lines = buf.toString('utf-8').split('\n').filter(l => l.trim());
-            for (const line of lines) { this.processLine(line); }
-        } catch {
+            // Prepend any partial line saved from the previous read
+            const text = this.lineBuffer + buf.toString('utf-8');
+            const lines = text.split('\n');
+            this.lineBuffer = lines.pop() ?? '';
 
-        }
-    }
-
-    private processLine(raw: string) {
-        let entry: ClaudeEntry;
-        try { entry = JSON.parse(raw); } catch { return; }
-
-        if (entry.type !== 'assistant') { return; }
-
-        const content = entry.message?.content;
-        if (!Array.isArray(content)) { return; }
-
-        const session = this.sessionManager.getById(this.sessionId);
-        if (!session) { return; }
-
-        let currentTask: string | undefined;
-        const newToolCalls: ToolCall[] = [];
-        const newFiles: string[] = [];
-
-        for (const block of content) {
-            if (block.type === 'text' && block.text) {
-                const first = block.text.split('\n').find(l => l.trim());
-                if (first) { currentTask = first.trim().slice(0, 120); }
+            let sawTurnDuration = false;
+            for (const line of lines) {
+                if (!line.trim()) { continue; }
+                const done = processTranscriptLine(line, this.sessionId, this.sessionManager, this.skipStatus);
+                if (done) { sawTurnDuration = true; }
             }
 
-            if (block.type === 'tool_use' && block.id && block.name) {
-                newToolCalls.push({
-                    id: block.id,
-                    name: block.name,
-                    input: block.input ? JSON.stringify(block.input) : "",
-                    status: 'done',
-                    startedAt: Date.now(),
-                });
-
-                const fileKey = FILE_TOOLS[block.name];
-                if (fileKey && block.input) {
-                    const fp = block.input[fileKey];
-                    if (typeof fp === 'string') { newFiles.push(fp); }
+            // If no turn_duration arrived but the session is now active, start
+            // an idle timer as a fallback for text-only turns where Claude does
+            // not emit turn_duration.
+            if (!sawTurnDuration && !this.skipStatus) {
+                const session = this.sessionManager.getById(this.sessionId);
+                if (session?.status === 'active') {
+                    this.idleTimer = setTimeout(() => {
+                        this.sessionManager.updateMetrics(this.sessionId, { status: 'done' });
+                    }, IDLE_TO_DONE_MS);
                 }
             }
-        }
-
-        const usage = entry.message?.usage;
-        const addedInput = usage?.input_tokens ?? 0;
-        const addedOutput = usage?.output_tokens ?? 0;
-
-        const patch: Parameters<SessionManager['updateMetrics']>[1] = {};
-
-        if (currentTask) {
-            patch.currentTask = currentTask;
-        }
-        if (newToolCalls.length > 0) {
-            patch.toolCalls = [...session.toolCalls, ...newToolCalls].slice(-50);
-        }
-        if (newFiles.length > 0) {
-            patch.filesTouched = [...new Set([...session.filesTouched, ...newFiles])];
-        }
-        if (addedInput > 0 || addedOutput > 0) {
-            patch.tokensInput = session.tokensInput + addedInput;
-            patch.tokensOutput = session.tokensOutput + addedOutput;
-            patch.contextWindowUsed = session.contextWindowUsed + addedOutput;
-        }
-
-        if (Object.keys(patch).length > 0) {
-            this.sessionManager.updateMetrics(this.sessionId, patch);
-        }
+        } catch {}
     }
 
     dispose() {
         this.disposed = true;
         this.watcher?.close();
+        clearInterval(this.pollTimer);
+        clearTimeout(this.idleTimer);
     }
 }
