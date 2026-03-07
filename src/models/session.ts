@@ -20,7 +20,7 @@ export interface Session {
     cohortId: string;
     status: SessionStatus;
     createdAt: Date;
-    terminal: vscode.Terminal;
+    terminal?: vscode.Terminal;
     note: string;
     framework: AgentFramework;
     parentId?: string;

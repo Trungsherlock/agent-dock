@@ -6,7 +6,7 @@ export class SessionManager {
     private _onDidChange = new vscode.EventEmitter<void>();
     readonly onDidChange = this._onDidChange.event;
 
-    add(name: string, cohortId: string, terminal: vscode.Terminal): Session {
+    add(name: string, cohortId: string, terminal?: vscode.Terminal): Session {
         const session: Session = {
             id: `session-${Date.now()}`,
             name,

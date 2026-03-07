@@ -69,13 +69,13 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
             }
             case 'focusSession': {
                 const s = this._sessionManager.getById(message.sessionId);
-                s?.terminal.show();
+                s?.terminal?.show();
                 break;
             }
             case 'endSession': {
                 const s = this._sessionManager.getById(message.sessionId);
                 if (s) {
-                    s.terminal.dispose();
+                    s.terminal?.dispose();
                     this._sessionManager.remove(message.sessionId);
                 }
                 break;
@@ -177,7 +177,7 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
 
     dispose() {
         for (const session of this._sessionManager.getAll()) {
-            session.terminal.dispose();
+            session.terminal?.dispose();
         }
     }
 }
