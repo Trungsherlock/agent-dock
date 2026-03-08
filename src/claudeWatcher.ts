@@ -5,6 +5,26 @@ import * as fs from 'fs';
 
 const POLL_INTERVAL_MS = 2000;
 
+export function isConversationFile(filePath: string): boolean {
+    try {
+        const buf = Buffer.alloc(4096);
+        const fd = fs.openSync(filePath, 'r');
+        const bytesRead = fs.readSync(fd, buf, 0, buf.length, 0);
+        fs.closeSync(fd);
+        const lines = buf.subarray(0, bytesRead).toString('utf-8').split('\n');
+        for (const line of lines) {
+            if (!line.trim()) { continue; }
+            try {
+                const entry = JSON.parse(line);
+                if (entry.type === 'user' || entry.type === 'assistant') { return true; }
+            } catch { continue; }
+        }
+        return false;
+    } catch {
+        return false;
+    }
+}
+
 function getClaudeProjectDirs(): string[] {
     const projectsRoot = path.join(os.homedir(), '.claude', 'projects');
     try {

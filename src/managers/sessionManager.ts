@@ -5,11 +5,10 @@ export class SessionManager {
     private sessions: Session[] = [];
     private _onDidChange = new vscode.EventEmitter<void>();
     readonly onDidChange = this._onDidChange.event;
-    private _counter = 0;
 
-    add(name: string, cohortId: string, terminal?: vscode.Terminal, createdAt?: Date): Session {
+    add(id: string, name: string, cohortId: string, terminal?: vscode.Terminal, createdAt?: Date): Session {
         const session: Session = {
-            id: `session-${Date.now()}-${this._counter++}`,
+            id,
             name,
             cohortId,
             status: 'active',
@@ -77,6 +76,14 @@ export class SessionManager {
         const session = this.getById(id);
         if (session) {
             session.claudeLogFile = logFile;
+            this._onDidChange.fire();
+        }
+    }
+
+    setTerminal(id: string, terminal: vscode.Terminal): void {
+        const session = this.getById(id);
+        if (session) {
+            session.terminal = terminal;
             this._onDidChange.fire();
         }
     }

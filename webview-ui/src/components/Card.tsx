@@ -53,7 +53,7 @@ function extractPathFromInput(input: string): string {
 }
 
 export function Card({ card, list, index, onClick }: CardProps) {
-  const { focusSession } = useBoardContext();
+  const { focusSession, resumeSession } = useBoardContext();
   const [, setTick] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const runStartedAt = useRef<number>(0);
@@ -103,7 +103,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
           <div style={{ height: "3px", backgroundColor: list.color }} />
 
           <div
-            onClick={() => focusSession(card.id)}
+            onClick={() => card.status === 'done' ? resumeSession(card.id) : focusSession(card.id)}
             style={{
               padding: "10px 12px",
               display: "flex",

@@ -96,6 +96,19 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 this._sessionManager.setStatus(message.sessionId, message.status);
                 break;
             }
+            case 'resumeSession': {
+                const s = this._sessionManager.getById(message.sessionId);
+                if (!s) { break; }
+                const terminal = vscode.window.createTerminal({
+                    name: s.name,
+                    cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+                });
+                terminal.show();
+                terminal.sendText(`claude --resume ${message.sessionId}`);
+                this._sessionManager.setTerminal(message.sessionId, terminal);
+                // this._sessionManager.setStatus(message.sessionId, 'active');
+                break;
+            }
             case 'newSession': {
                 vscode.commands.executeCommand('agentdock.newSession');
                 break;

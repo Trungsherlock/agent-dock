@@ -338,6 +338,7 @@ interface BoardContextValue {
   setStatus: (cardId: string, status: SessionStatus) => void;
   endSession: (cardId: string) => void;
   focusSession: (cardId: string) => void;
+  resumeSession: (cardId: string) => void;
   newSession: () => void;
   createCohort: (label: string) => void;
   renameCohort: (id: string, label: string) => void;
@@ -409,6 +410,10 @@ export function BoardProvider({ children }: { children: ReactNode }) {
     vscode.postMessage({ command: "focusSession", sessionId: cardId });
   };
 
+  const resumeSession = (cardId: string) => {
+    vscode.postMessage({ command: "resumeSession", sessionId: cardId });
+  };
+
   const newSession = () => {
     vscode.postMessage({ command: "newSession" });
   };
@@ -443,6 +448,7 @@ export function BoardProvider({ children }: { children: ReactNode }) {
         setStatus,
         endSession,
         focusSession,
+        resumeSession,
         newSession,
         createCohort,
         renameCohort,
