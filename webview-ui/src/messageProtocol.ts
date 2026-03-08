@@ -46,4 +46,5 @@ export type WebviewMessage =
     | { command: 'setStatus'; sessionId: string; status: SessionStatus }
     | { command: 'createCohort'; label: string }
     | { command: 'renameCohort'; cohortId: string; newLabel: string }
-    | { command: 'deleteCohort'; cohortId: string };
+    | { command: 'deleteCohort'; cohortId: string }
+    | { command: 'resumeSession'; sessionId: string };

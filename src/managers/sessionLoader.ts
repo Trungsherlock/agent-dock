@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { SessionManager } from './sessionManager';
 import { CohortManager, type Cohort } from './cohortManager';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
-import { getAllClaudeLogFiles } from '../claudeWatcher';
+import { getAllClaudeLogFiles, isConversationFile } from '../claudeWatcher';
 import { SESSIONS_KEY, COHORTS_KEY, type PersistedSession } from '../constants';
 import type { SessionStatus } from '../models/session';
 
@@ -15,8 +15,8 @@ export function loadSessions(
     const saved = context.workspaceState.get<PersistedSession[]>(SESSIONS_KEY, []);
     for (const s of saved) {
         if (s.claudeLogFile) {
-            // Claude sessions are identified by their log file — no terminal needed
-            const session = sessionManager.add(s.name, s.cohortId);
+            const id = path.basename(s.claudeLogFile, '.jsonl');
+            const session = sessionManager.add(id, s.name, s.cohortId);
             if (s.note) { sessionManager.setNote(session.id, s.note); }
             if (s.status && s.status !== 'active') {
                 sessionManager.setStatus(session.id, s.status as SessionStatus);
@@ -25,15 +25,15 @@ export function loadSessions(
             const watcher = new ClaudeLogWatcher(session.id, s.claudeLogFile, sessionManager, true);
             context.subscriptions.push({ dispose: () => watcher.dispose() });
         } else {
-            // Non-Claude agents (Aider, etc.) — reconnect by terminal name
-            const existing = vscode.window.terminals.find(t => t.name === s.name);
-            const terminal = existing ?? vscode.window.createTerminal({ name: s.name });
-            if (!existing) { terminal.sendText(s.name.toLowerCase()); }
-            const session = sessionManager.add(s.name, s.cohortId, terminal);
-            if (s.note) { sessionManager.setNote(session.id, s.note); }
-            if (s.status && s.status !== 'active') {
-                sessionManager.setStatus(session.id, s.status as SessionStatus);
-            }
+            // // Non-Claude agents (Aider, etc.) — reconnect by terminal name
+            // const existing = vscode.window.terminals.find(t => t.name === s.name);
+            // const terminal = existing ?? vscode.window.createTerminal({ name: s.name });
+            // if (!existing) { terminal.sendText(s.name.toLowerCase()); }
+            // const session = sessionManager.add(s.id, s.name, s.cohortId, terminal);
+            // if (s.note) { sessionManager.setNote(session.id, s.note); }
+            // if (s.status && s.status !== 'active') {
+            //     sessionManager.setStatus(session.id, s.status as SessionStatus);
+            // }
         }
     }
 }
@@ -54,6 +54,7 @@ export function setupPersistence(
     context.subscriptions.push(
         sessionManager.onDidChange(() => {
             const data: PersistedSession[] = sessionManager.getAll().map(s => ({
+                id: s.id,
                 name: s.name,
                 cohortId: s.cohortId,
                 note: s.note,
@@ -75,12 +76,13 @@ export function loadHistoricalSessions(
     sessionManager: SessionManager,
 ): void {
     const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    const trackedFiles = new Set(sessionManager.getAll().map(s => s.claudeLogFile).filter(Boolean));
     for (const filePath of workspacePath ? getAllClaudeLogFiles(workspacePath) : []) {
-        if (trackedFiles.has(filePath)) { continue; }
-        const name = path.basename(filePath, '.jsonl').slice(0, 8);
+        const id = path.basename(filePath, '.jsonl');
+        if (sessionManager.getById(id)) { continue; }
+        if (!isConversationFile(filePath)) { continue; }
+        const name = id.slice(0, 8);
         const birthtime = fs.statSync(filePath).birthtime;
-        const session = sessionManager.add(name, 'uncategorized', undefined, birthtime);
+        const session = sessionManager.add(id, name, 'uncategorized', undefined, birthtime);
         sessionManager.setClaudeLogFile(session.id, filePath);
         sessionManager.setStatus(session.id, 'done');
         const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager, true);

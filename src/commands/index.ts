@@ -1,10 +1,12 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { SessionManager } from '../managers/sessionManager';
 import { CohortManager } from '../managers/cohortManager';
 import { BoardViewProvider } from '../views/boardViewProvider';
 import { SessionTreeItem } from '../views/sessionTreeItem';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
-import { watchForNewClaudeSessions } from '../claudeWatcher';
+import { watchForNewClaudeSessions, isConversationFile } from '../claudeWatcher';
+import { CLAUDE_CODE_AGENT_PREFIX } from '../constants';
 
 export function registerCommands(
     context: vscode.ExtensionContext,
@@ -14,11 +16,13 @@ export function registerCommands(
 ): void {
     // Watch for new Claude sessions (live terminal → new .jsonl file)
     watchForNewClaudeSessions(context, (filePath: string) => {
+        if (!isConversationFile(filePath)) { return; }
         const terminal = vscode.window.activeTerminal;
         if (!terminal) { return; }
         if (sessionManager.getAll().some(s => s.terminal === terminal)) { return; }
 
-        const session = sessionManager.add(terminal.name, 'uncategorized', terminal);
+        const id = path.basename(filePath, '.jsonl');
+        const session = sessionManager.add(id, terminal.name, 'uncategorized', terminal);
         sessionManager.setClaudeLogFile(session.id, filePath);
         const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager);
         context.subscriptions.push({ dispose: () => watcher.dispose() });
@@ -34,7 +38,7 @@ export function registerCommands(
                 /cursor/i.test(name) ||
                 /cody/i.test(name);
             if (!isNonClaudeAgent) { return; }
-            sessionManager.add(name, 'uncategorized', terminal);
+            sessionManager.add(crypto.randomUUID(), name, 'uncategorized', terminal);
         })
     );
 
@@ -64,22 +68,14 @@ export function registerCommands(
         })
     );
 
+    let nextIdx = 1;
     context.subscriptions.push(
         vscode.commands.registerCommand('agentdock.newSession', async () => {
-            const name = await vscode.window.showInputBox({
-                prompt: 'Session name',
-                placeHolder: 'e.g. Fix login bug',
-            });
-            if (!name) { return; }
-            const picked = await vscode.window.showQuickPick(
-                cohortManager.getAll().map(c => ({ label: c.label, id: c.id })),
-                { placeHolder: 'Select a cohort' }
-            );
-            if (!picked) { return; }
-            const terminal = vscode.window.createTerminal({ name });
+            const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            const name = `${CLAUDE_CODE_AGENT_PREFIX} #${nextIdx++}`;
+            const terminal = vscode.window.createTerminal({ name, cwd });
             terminal.show();
             terminal.sendText('claude');
-            sessionManager.add(name, picked.id, terminal);
         })
     );
 
