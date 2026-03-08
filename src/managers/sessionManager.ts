@@ -11,7 +11,7 @@ export class SessionManager {
             id,
             name,
             cohortId,
-            status: 'active',
+            status: 'thinking',
             createdAt: createdAt ?? new Date(),
             terminal,
             note: '',
@@ -84,6 +84,14 @@ export class SessionManager {
         const session = this.getById(id);
         if (session) {
             session.terminal = terminal;
+            this._onDidChange.fire();
+        }
+    }
+
+    setCurrentTool(id: string, tool: { name: string; target: string } | undefined): void {
+        const session = this.getById(id);
+        if (session) {
+            session.currentTool = tool;
             this._onDidChange.fire();
         }
     }

@@ -9,6 +9,7 @@ export interface SerializeSession {
     note: string;
     framework: string;
     currentTask?: string;
+    currentTool?: { name: string; target: string };
     filesTouched: string[];
     toolCalls: ToolCall[];
     tokensInput: number;
@@ -53,6 +54,7 @@ export function serializeSession(s: import('../models/session').Session): Serial
         note: s.note,
         framework: s.framework,
         currentTask: s.currentTask,
+        currentTool: s.currentTool,
         filesTouched: s.filesTouched,
         toolCalls: s.toolCalls,
         tokensInput: s.tokensInput,

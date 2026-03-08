@@ -73,7 +73,7 @@ const MOCK_STATE: BoardState = {
       id: "session-001",
       name: "JWT Fixer",
       cohortId: "cohort-auth",
-      status: "active",
+      status: "thinking",
       framework: "claude",
       note: "",
       createdAt: new Date(Date.now() - 1000 * 60 * 4 - 32000).toISOString(),

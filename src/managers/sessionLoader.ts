@@ -18,7 +18,8 @@ export function loadSessions(
             const id = path.basename(s.claudeLogFile, '.jsonl');
             const session = sessionManager.add(id, s.name, s.cohortId);
             if (s.note) { sessionManager.setNote(session.id, s.note); }
-            if (s.status && s.status !== 'active') {
+            const autoStatuses = ['running', 'thinking'];
+            if (s.status && !autoStatuses.includes(s.status)) {
                 sessionManager.setStatus(session.id, s.status as SessionStatus);
             }
             sessionManager.setClaudeLogFile(session.id, s.claudeLogFile);

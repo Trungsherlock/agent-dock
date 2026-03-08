@@ -1,0 +1,53 @@
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+
+const HOOK_SCRIPT_NAME = 'agent-dock-hook.py';
+const HOOK_EVENTS = ['PreToolUse', 'PostToolUse', 'Stop', 'SubagentStop'];
+
+const HOOK_SCRIPT = `#!/usr/bin/env python3
+import sys, json
+try:
+    import urllib.request
+    data = json.load(sys.stdin)
+    req = urllib.request.Request(
+        "http://localhost:3456/hook",
+        data=json.dumps(data).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+    urllib.request.urlopen(req, timeout=1)
+except Exception:
+    pass
+`;
+
+export function installHooks(): void {
+    const claudeDir = path.join(os.homedir(), '.claude');
+    const scriptPath = path.join(claudeDir, HOOK_SCRIPT_NAME);
+    const hookCommand = `python3 "${scriptPath}"`;
+
+    fs.mkdirSync(claudeDir, { recursive: true });
+
+    fs.writeFileSync(scriptPath, HOOK_SCRIPT, { mode: 0o755 });
+
+    const settingsPath = path.join(claudeDir, 'settings.json');
+    let settings: Record<string, unknown> = {};
+    try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8')); } catch {}
+
+    const hooks = (settings['hooks'] ?? {}) as Record<string, unknown[]>;
+    let changed = false;
+
+    for (const event of HOOK_EVENTS) {
+        const existing = (hooks[event] ?? []) as Array<{ hooks?: Array<{ command?: string }> }>;
+        const alreadyRegistered = existing.some(e => e.hooks?.some(h => h.command === hookCommand));
+        if (!alreadyRegistered) {
+            hooks[event] = [...existing, { hooks: [{ type: 'command', command: hookCommand }] }];
+            changed = true;
+        }
+    }
+
+    if (changed) {
+        settings['hooks'] = hooks;
+        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+    }
+}

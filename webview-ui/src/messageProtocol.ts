@@ -1,4 +1,4 @@
-export type SessionStatus = 'active' | 'idle' | 'done';
+export type SessionStatus = 'running' | 'thinking' | 'idle' | 'done' | 'error';
 
 export interface SerializedSession {
     id: string;
@@ -9,6 +9,7 @@ export interface SerializedSession {
     note: string;
     framework: string;
     currentTask?: string;
+    currentTool?: { name: string; target: string };
     filesTouched: string[];
     toolCalls: {
         id: string;

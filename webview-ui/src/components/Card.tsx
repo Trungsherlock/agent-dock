@@ -11,9 +11,11 @@ interface CardProps {
 }
 
 const STATUS_STYLE: Record<string, { color: string; label: string }> = {
-  active: { color: "#4ec9b0", label: "running" },
+  running: { color: "#f59e0b", label: "running" },
+  thinking: { color: "#818cf8", label: "thinking" },
   idle: { color: "#858585", label: "idle" },
   done: { color: "#89d185", label: "done" },
+  error: { color: "#ef4444", label: "error" },
 };
 
 const TOOL_ICON: Record<string, string> = {
@@ -58,12 +60,14 @@ export function Card({ card, list, index, onClick }: CardProps) {
   const [expanded, setExpanded] = useState(false);
   const runStartedAt = useRef<number>(0);
 
+  const isActive = card.status === "running" || card.status === "thinking";
+
   useEffect(() => {
-    if (card.status !== "active") return;
+    if (!isActive) return;
     runStartedAt.current = Date.now();
     const timer = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(timer);
-  }, [card.status]);
+  }, [isActive]);
 
   const statusStyle = STATUS_STYLE[card.status] ?? STATUS_STYLE.idle;
   const totalTokens = card.tokensInput + card.tokensOutput;
@@ -103,7 +107,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
           <div style={{ height: "3px", backgroundColor: list.color }} />
 
           <div
-            onClick={() => card.status === 'done' ? resumeSession(card.id) : focusSession(card.id)}
+            onClick={() => card.status === "done" ? resumeSession(card.id) : focusSession(card.id)}
             style={{
               padding: "10px 12px",
               display: "flex",
@@ -182,7 +186,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
                 </span>
                 {statusStyle.label}
               </span>
-              <span>{card.status === "active" && runStartedAt.current > 0 ? formatDuration(new Date(runStartedAt.current).toISOString()) : formatDuration(card.createdAt)}</span>
+              <span>{isActive && runStartedAt.current > 0 ? formatDuration(new Date(runStartedAt.current).toISOString()) : formatDuration(card.createdAt)}</span>
               <span
                 style={{
                   padding: "1px 6px",
@@ -194,6 +198,39 @@ export function Card({ card, list, index, onClick }: CardProps) {
                 {card.framework}
               </span>
             </div>
+
+            {/* Live tool */}
+            {card.currentTool && (
+              <div
+                style={{
+                  fontSize: "10px",
+                  fontFamily: "monospace",
+                  color: "#f59e0b",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  overflow: "hidden",
+                }}
+              >
+                <span style={{ flexShrink: 0 }}>⟳</span>
+                <span style={{ fontWeight: 600, flexShrink: 0 }}>{card.currentTool.name}</span>
+                {card.currentTool.target && (
+                  <>
+                    <span style={{ color: "#6b7a99", flexShrink: 0 }}>→</span>
+                    <span
+                      style={{
+                        color: "#8892a4",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {card.currentTool.target}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Context bar */}
             {contextPct > 0 && (

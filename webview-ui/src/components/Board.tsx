@@ -98,7 +98,7 @@ function StatusBar() {
     return null;
   }
 
-  const active = cards.filter((c) => c.status === "active").length;
+  const active = cards.filter((c) => c.status === "running" || c.status === "thinking").length;
   const done = cards.filter((c) => c.status === "done").length;
   const tokens = cards.reduce(
     (sum, c) => sum + c.tokensInput + c.tokensOutput,
