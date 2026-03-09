@@ -48,20 +48,32 @@ export function List({ list }: ListProps) {
   return (
     <>
       <div
-        className="flex flex-col w-full rounded-lg shadow-md"
-        style={{ backgroundColor: "#1e1e2e", border: "1px solid #2a2a3e" }}
+        className="flex flex-col w-full"
+        style={{
+          backgroundColor: "#141720",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: "10px",
+        }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        <div
+          className="flex items-center gap-2 px-3.5 py-2.5"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+        >
           {editing ? (
             <input
               ref={inputRef}
               autoFocus
-              className="flex-1 text-sm font-bold rounded px-1 border"
+              className="flex-1 rounded px-1 border"
               style={{
-                color: "#e2e8f0",
+                fontFamily: "monospace",
+                fontSize: "11px",
+                fontWeight: 600,
+                letterSpacing: "0.8px",
+                textTransform: "uppercase",
+                color: "#8891a8",
                 background: "transparent",
-                borderColor: "#3d3d5c",
+                borderColor: "rgba(255,255,255,0.15)",
               }}
               value={editLabel}
               onChange={(e) => setEditLabel(e.target.value)}
@@ -73,9 +85,14 @@ export function List({ list }: ListProps) {
             />
           ) : (
             <span
-              className="text-sm font-bold select-none"
+              className="flex-1 select-none"
               style={{
-                color: "#e2e8f0",
+                fontFamily: "monospace",
+                fontSize: "11px",
+                fontWeight: 600,
+                letterSpacing: "0.8px",
+                textTransform: "uppercase",
+                color: "#8891a8",
                 cursor: isUncategorized ? "default" : "pointer",
               }}
               onDoubleClick={startEdit}
@@ -84,11 +101,23 @@ export function List({ list }: ListProps) {
               {list.title}
             </span>
           )}
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: "10px",
+              color: "#4e566a",
+              background: "#252c3d",
+              padding: "1px 7px",
+              borderRadius: "99px",
+            }}
+          >
+            {cards.length}
+          </span>
           {!isUncategorized && (
             <button
               onClick={handleDelete}
-              className="ml-2 text-xs leading-none transition-opacity hover:opacity-60"
-              style={{ color: "#6b7a99" }}
+              className="text-xs leading-none transition-opacity hover:opacity-60"
+              style={{ color: "#4e566a" }}
               title="Delete cohort"
             >
               ✕
@@ -102,19 +131,18 @@ export function List({ list }: ListProps) {
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className="flex flex-col px-3"
               style={{
                 minHeight: "32px",
                 backgroundColor: snapshot.isDraggingOver
-                  ? list.color + "18"
+                  ? list.color + "10"
                   : "transparent",
                 transition: "background-color 0.15s ease",
               }}
             >
               {cards.length === 0 && !snapshot.isDraggingOver && (
                 <div
-                  className="text-xs text-center py-3 italic"
-                  style={{ color: "#6b7a99" }}
+                  className="text-xs text-center py-4 italic"
+                  style={{ color: "#4e566a" }}
                 >
                   No agents here
                 </div>
@@ -135,15 +163,19 @@ export function List({ list }: ListProps) {
 
         {/* Footer */}
         <div
-          className="flex items-center justify-between px-4 py-2 mt-1"
-          style={{ borderTop: "1px solid #2a2a3e" }}
+          className="flex items-center px-3.5 py-2"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
         >
           <button
             onClick={newSession}
-            className="flex items-center gap-1.5 text-xs transition-opacity hover:opacity-60"
-            style={{ color: "#8892a4" }}
+            className="flex items-center gap-1.5 transition-opacity hover:opacity-60"
+            style={{
+              fontFamily: "monospace",
+              fontSize: "10px",
+              color: "#4e566a",
+            }}
           >
-            <span className="text-base leading-none">+</span>
+            <span style={{ fontSize: "14px", lineHeight: 1 }}>+</span>
             <span>Add a card</span>
           </button>
         </div>

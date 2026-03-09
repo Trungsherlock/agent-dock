@@ -5,15 +5,19 @@ import type { BoardCard, BoardList } from "../context/BoardContext";
 import type { SessionStatus } from "../messageProtocol";
 
 const STATUS_CYCLE: Record<SessionStatus, SessionStatus> = {
-  active: "idle",
+  running: "thinking",
+  thinking: "idle",
   idle: "done",
-  done: "active",
+  done: "idle",
+  error: "idle",
 };
 
 const STATUS_MAP: Record<SessionStatus, { label: string; color: string }> = {
-  active: { label: "Active", color: "#4ec9b0" },
+  running: { label: "Running", color: "#f59e0b" },
+  thinking: { label: "Thinking", color: "#818cf8" },
   idle: { label: "Idle", color: "#858585" },
   done: { label: "Done", color: "#89d185" },
+  error: { label: "Error", color: "#ef4444" },
 };
 
 interface CardModalProps {

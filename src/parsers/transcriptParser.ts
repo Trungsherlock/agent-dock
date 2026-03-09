@@ -38,7 +38,7 @@ export function processTranscriptLine(
     try { entry = JSON.parse(raw); } catch { return false; }
 
     if (entry.type === 'system' && entry.subtype === 'turn_duration') {
-        sessionManager.updateMetrics(sessionId, { status: 'done' });
+        sessionManager.updateMetrics(sessionId, { status: 'idle' });
         return true;
     }
 
@@ -47,7 +47,7 @@ export function processTranscriptLine(
     const content = entry.message?.content;
     if (!Array.isArray(content)) { return false; }
 
-    if (!skipStatus) { sessionManager.updateMetrics(sessionId, { status: 'active'}); }
+    if (!skipStatus) { sessionManager.updateMetrics(sessionId, { status: 'thinking' }); }
 
     const session = sessionManager.getById(sessionId);
     if (!session) { return false; }

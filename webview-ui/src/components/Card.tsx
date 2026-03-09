@@ -10,10 +10,25 @@ interface CardProps {
   onClick: () => void;
 }
 
-const STATUS_STYLE: Record<string, { color: string; label: string }> = {
-  active: { color: "#4ec9b0", label: "running" },
-  idle: { color: "#858585", label: "idle" },
-  done: { color: "#89d185", label: "done" },
+const STATUS_STYLE: Record<string, { color: string; glow: string; label: string }> = {
+  running:  { color: "#00d4aa", glow: "rgba(0,212,170,0.35)",   label: "running" },
+  thinking: { color: "#818cf8", glow: "rgba(129,140,248,0.35)", label: "thinking" },
+  idle:     { color: "#f0a500", glow: "rgba(240,165,0,0.3)",    label: "idle" },
+  done:     { color: "#4ade80", glow: "rgba(74,222,128,0.2)",   label: "done" },
+  error:    { color: "#ff4d6a", glow: "rgba(255,77,106,0.35)",  label: "error" },
+};
+
+const FRAMEWORK_BADGE: Record<string, { bg: string; color: string; border: string }> = {
+  claude: {
+    bg: "rgba(232,121,58,0.15)",
+    color: "#e8793a",
+    border: "1px solid rgba(232,121,58,0.25)",
+  },
+  custom: {
+    bg: "rgba(91,124,246,0.15)",
+    color: "#5b7cf6",
+    border: "1px solid rgba(91,124,246,0.25)",
+  },
 };
 
 const TOOL_ICON: Record<string, string> = {
@@ -23,9 +38,9 @@ const TOOL_ICON: Record<string, string> = {
 };
 
 const TOOL_ICON_COLOR: Record<string, string> = {
-  running: "#f59e0b",
-  done: "#4ec9b0",
-  error: "#ef4444",
+  running: "#00d4aa",
+  done: "#4ade80",
+  error: "#ff4d6a",
 };
 
 function formatDuration(createdAt: string): string {
@@ -52,32 +67,45 @@ function extractPathFromInput(input: string): string {
   }
 }
 
-export function Card({ card, list, index, onClick }: CardProps) {
+export function Card({ card, index, onClick }: CardProps) {
   const { focusSession, resumeSession } = useBoardContext();
   const [, setTick] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const runStartedAt = useRef<number>(0);
 
+  const isActive = card.status === "running" || card.status === "thinking";
+
   useEffect(() => {
-    if (card.status !== "active") return;
+    if (!isActive) return;
     runStartedAt.current = Date.now();
     const timer = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(timer);
-  }, [card.status]);
+  }, [isActive]);
 
   const statusStyle = STATUS_STYLE[card.status] ?? STATUS_STYLE.idle;
+  const frameworkBadge = FRAMEWORK_BADGE[card.framework] ?? FRAMEWORK_BADGE.custom;
   const totalTokens = card.tokensInput + card.tokensOutput;
   const contextPct =
     card.contextWindowMax > 0
-      ? Math.min(
-          100,
-          Math.round((card.contextWindowUsed / card.contextWindowMax) * 100),
-        )
+      ? Math.min(100, Math.round((card.contextWindowUsed / card.contextWindowMax) * 100))
       : 0;
-  const contextBarColor =
-    contextPct > 80 ? "#ef4444" : contextPct > 60 ? "#f59e0b" : "#4ec9b0";
+
+  const barBackground =
+    card.status === "error"
+      ? "linear-gradient(90deg, #c0392b, #ff4d6a)"
+      : card.status === "running" || card.status === "thinking"
+      ? "linear-gradient(90deg, #00b894, #00d4aa, #4dffd4)"
+      : statusStyle.color;
+
   const recentTools = card.toolCalls.slice(-3);
   const hasTools = recentTools.length > 0 || card.filesTouched.length > 0;
+
+  const dotClass =
+    card.status === "running" || card.status === "thinking"
+      ? "status-dot-pulse-green"
+      : card.status === "error"
+      ? "status-dot-pulse-red"
+      : "";
 
   return (
     <Draggable draggableId={card.id} index={index}>
@@ -89,59 +117,77 @@ export function Card({ card, list, index, onClick }: CardProps) {
           style={{
             ...provided.draggableProps.style,
             opacity: snapshot.isDragging ? 0.85 : 1,
-            marginBottom: "10px",
-            borderRadius: "3px",
-            border: "1px solid #333348",
-            backgroundColor: "#252535",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
-            overflow: "hidden",
-            cursor: "pointer",
-            userSelect: "none",
+            padding: "4px 6px",
           }}
         >
-          {/* Thin color accent top bar */}
-          <div style={{ height: "3px", backgroundColor: list.color }} />
-
+          {/* Inner wrapper handles positioning and background — never touched by DnD */}
           <div
-            onClick={() => card.status === 'done' ? resumeSession(card.id) : focusSession(card.id)}
             style={{
-              padding: "10px 12px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
+              position: "relative",
+              backgroundColor: snapshot.isDragging ? "#212638" : "#1c2030",
+              border: `1px solid ${statusStyle.color}28`,
+              borderRadius: "6px",
+              cursor: "pointer",
+              userSelect: "none",
+              transition: "background 0.15s ease",
+              overflow: "hidden",
             }}
           >
-            {/* Header */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: "8px",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontSize: "10px",
-                    fontFamily: "monospace",
-                    color: "#6b7a99",
-                    marginBottom: "1px",
-                  }}
-                >
-                  {card.id}
-                </div>
-                <div
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "#e2e8f0",
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {card.name}
-                </div>
-              </div>
+          {/* Left accent stripe */}
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: "3px",
+              backgroundColor: statusStyle.color,
+              boxShadow: `2px 0 8px ${statusStyle.glow}`,
+            }}
+          />
+
+          <div
+            onClick={() =>
+              card.status === "done" ? resumeSession(card.id) : focusSession(card.id)
+            }
+            style={{
+              padding: "11px 14px 11px 18px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "7px",
+            }}
+          >
+            {/* Top row: badge + name + button */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  padding: "2px 7px",
+                  borderRadius: "4px",
+                  letterSpacing: "0.3px",
+                  background: frameworkBadge.bg,
+                  color: frameworkBadge.color,
+                  border: frameworkBadge.border,
+                  flexShrink: 0,
+                }}
+              >
+                {card.framework}
+              </span>
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#e8eaf0",
+                  flex: 1,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {card.name}
+              </span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -150,14 +196,13 @@ export function Card({ card, list, index, onClick }: CardProps) {
                 title="Open details"
                 style={{
                   fontSize: "11px",
-                  padding: "2px 7px",
-                  borderRadius: "5px",
-                  background: "#2e2e42",
-                  color: "#8892a4",
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                  background: "#252c3d",
+                  color: "#8891a8",
                   border: "none",
                   cursor: "pointer",
                   flexShrink: 0,
-                  marginTop: "2px",
                 }}
               >
                 ⌨
@@ -169,71 +214,95 @@ export function Card({ card, list, index, onClick }: CardProps) {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
-                fontSize: "11px",
-                color: "#8892a4",
+                gap: "6px",
+                fontFamily: "monospace",
+                fontSize: "10px",
               }}
             >
               <span
-                style={{ display: "flex", alignItems: "center", gap: "4px" }}
-              >
-                <span style={{ color: statusStyle.color, fontSize: "9px" }}>
-                  ●
-                </span>
-                {statusStyle.label}
-              </span>
-              <span>{card.status === "active" && runStartedAt.current > 0 ? formatDuration(new Date(runStartedAt.current).toISOString()) : formatDuration(card.createdAt)}</span>
-              <span
+                className={dotClass}
                 style={{
-                  padding: "1px 6px",
-                  borderRadius: "4px",
-                  background: "#2e2e42",
-                  fontSize: "10px",
+                  width: "7px",
+                  height: "7px",
+                  borderRadius: "50%",
+                  backgroundColor: statusStyle.color,
+                  boxShadow: `0 0 6px ${statusStyle.glow}`,
+                  flexShrink: 0,
+                  display: "inline-block",
                 }}
-              >
-                {card.framework}
+              />
+              <span style={{ color: statusStyle.color }}>{statusStyle.label}</span>
+              <span style={{ color: "#4e566a" }}>
+                {isActive && runStartedAt.current > 0
+                  ? formatDuration(new Date(runStartedAt.current).toISOString())
+                  : formatDuration(card.createdAt)}
               </span>
             </div>
 
+            {/* Live tool action */}
+            {card.currentTool && (
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "10px",
+                  color: "#00d4aa",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                }}
+              >
+                <span className="spin-icon" style={{ flexShrink: 0 }}>↻</span>
+                <span style={{ fontWeight: 600, flexShrink: 0 }}>
+                  {card.currentTool.name}
+                </span>
+                {card.currentTool.target && (
+                  <span style={{ color: "#8891a8" }}>
+                    {card.currentTool.target.split("/").pop()}
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Context bar */}
             {contextPct > 0 && (
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "3px" }}
-              >
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "10px",
-                    color: "#6b7a99",
-                  }}
-                >
-                  <span>Context {contextPct}%</span>
-                  <span style={{ display: "flex", gap: "8px" }}>
-                    {totalTokens > 0 && (
-                      <span>{formatTokens(totalTokens)} tok</span>
-                    )}
-                    {card.costUsd > 0 && (
-                      <span>${card.costUsd.toFixed(3)}</span>
-                    )}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    height: "5px",
+                    height: "3px",
+                    background: "rgba(255,255,255,0.06)",
                     borderRadius: "99px",
-                    background: "#2e2e42",
+                    overflow: "hidden",
                   }}
                 >
                   <div
                     style={{
-                      height: "5px",
+                      height: "100%",
                       borderRadius: "99px",
                       width: `${contextPct}%`,
-                      backgroundColor: contextBarColor,
+                      background: barBackground,
+                      boxShadow:
+                        card.status === "running" || card.status === "thinking"
+                          ? "0 0 8px rgba(0,212,170,0.5)"
+                          : undefined,
                       transition: "width 0.3s",
                     }}
                   />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontFamily: "monospace",
+                    fontSize: "9px",
+                    color: "#4e566a",
+                  }}
+                >
+                  <span>Context {contextPct}%</span>
+                  <span>
+                    {totalTokens > 0 && `${formatTokens(totalTokens)} tok`}
+                    {totalTokens > 0 && card.costUsd > 0 && " · "}
+                    {card.costUsd > 0 && `$${card.costUsd.toFixed(3)}`}
+                  </span>
                 </div>
               </div>
             )}
@@ -242,8 +311,8 @@ export function Card({ card, list, index, onClick }: CardProps) {
             {card.currentTask && (
               <div
                 style={{
-                  fontSize: "11px",
-                  color: "#8892a4",
+                  fontSize: "10px",
+                  color: "#8891a8",
                   fontStyle: "italic",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -254,7 +323,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
               </div>
             )}
 
-            {/* Tool calls */}
+            {/* Tool calls (expanded) */}
             {expanded && recentTools.length > 0 && (
               <div>
                 <div
@@ -263,19 +332,13 @@ export function Card({ card, list, index, onClick }: CardProps) {
                     fontWeight: 700,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
-                    color: "#6b7a99",
+                    color: "#4e566a",
                     marginBottom: "4px",
                   }}
                 >
                   Tool Calls
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "2px",
-                  }}
-                >
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   {recentTools.map((t) => (
                     <div
                       key={t.id}
@@ -299,7 +362,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
                       <span
                         style={{
                           fontWeight: 600,
-                          color: "#c9d1e0",
+                          color: "#e8eaf0",
                           width: "72px",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
@@ -311,7 +374,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
                       </span>
                       <span
                         style={{
-                          color: "#6b7a99",
+                          color: "#4e566a",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
@@ -321,7 +384,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
                         {extractPathFromInput(t.input)}
                       </span>
                       {t.durationMs !== undefined && (
-                        <span style={{ color: "#9ca3af", flexShrink: 0 }}>
+                        <span style={{ color: "#4e566a", flexShrink: 0 }}>
                           {t.durationMs}ms
                         </span>
                       )}
@@ -331,7 +394,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
               </div>
             )}
 
-            {/* Files touched */}
+            {/* Files touched (expanded) */}
             {expanded && card.filesTouched.length > 0 && (
               <div>
                 <div
@@ -340,7 +403,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
                     fontWeight: 700,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
-                    color: "#6b7a99",
+                    color: "#4e566a",
                     marginBottom: "3px",
                   }}
                 >
@@ -349,7 +412,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
                 <div
                   style={{
                     fontSize: "10px",
-                    color: "#8892a4",
+                    color: "#8891a8",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -369,7 +432,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
                 }}
                 style={{
                   fontSize: "9px",
-                  color: "#6b7a99",
+                  color: "#4e566a",
                   textAlign: "center",
                   marginTop: "-2px",
                   background: "none",
@@ -383,6 +446,7 @@ export function Card({ card, list, index, onClick }: CardProps) {
               </button>
             )}
           </div>
+          </div>{/* end inner wrapper */}
         </div>
       )}
     </Draggable>

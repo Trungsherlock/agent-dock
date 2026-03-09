@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-export type SessionStatus = 'active' | 'idle' | 'done';
+export type SessionStatus = 'running' | 'thinking' | 'idle' | 'done' | 'error';
 
 export type AgentFramework = 'claude' | 'custom';
 
@@ -26,6 +26,7 @@ export interface Session {
     parentId?: string;
     pid?: number;
     currentTask?: string;
+    currentTool?: { name: string; target: string };
     filesTouched: string[];
     toolCalls: ToolCall[];
     tokensInput: number;
