@@ -148,7 +148,7 @@ export function Card({ card, index, onClick }: CardProps) {
 
           <div
             onClick={() =>
-              card.status === "done" ? resumeSession(card.id) : focusSession(card.id)
+              card.status === "idle" ? resumeSession(card.id) : focusSession(card.id)
             }
             style={{
               padding: "11px 14px 11px 18px",
@@ -256,9 +256,33 @@ export function Card({ card, index, onClick }: CardProps) {
                   {card.currentTool.name}
                 </span>
                 {card.currentTool.target && (
-                  <span style={{ color: "#8891a8" }}>
+                  <span style={{ color: "#8891a8", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {card.currentTool.target.split("/").pop()}
                   </span>
+                )}
+                {card.waitingForPermission && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      focusSession(card.id);
+                    }}
+                    title="Claude is waiting for your approval"
+                    style={{
+                      marginLeft: "auto",
+                      flexShrink: 0,
+                      fontSize: "9px",
+                      fontWeight: 700,
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      background: "rgba(250,204,21,0.15)",
+                      color: "#facc15",
+                      border: "1px solid rgba(250,204,21,0.35)",
+                      cursor: "pointer",
+                      letterSpacing: "0.3px",
+                    }}
+                  >
+                    ask for permission
+                  </button>
                 )}
               </div>
             )}

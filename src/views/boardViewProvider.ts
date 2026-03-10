@@ -69,7 +69,16 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
             }
             case 'focusSession': {
                 const s = this._sessionManager.getById(message.sessionId);
-                s?.terminal?.show();
+                if (!s) { break; }
+                if (s.terminal) {
+                    s.terminal.show();
+                } else {
+                    const found = vscode.window.terminals.find(t => t.name === s.name);
+                    if (found) {
+                        found.show();
+                        this._sessionManager.setTerminal(s.id, found);
+                    }
+                }
                 break;
             }
             case 'endSession': {

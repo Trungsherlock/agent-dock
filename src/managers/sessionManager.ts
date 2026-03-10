@@ -96,6 +96,14 @@ export class SessionManager {
         }
     }
 
+    setPermissionRequest(id: string, value: boolean): void {
+        const session = this.getById(id);
+        if (session) {
+            session.waitingForPermission = value;
+            this._onDidChange.fire();
+        }
+    }
+
     setNote(id: string, note: string): void {
         const session = this.getById(id);
         if (session) {

@@ -17,6 +17,7 @@ export interface SerializeSession {
     costUsd: number;
     contextWindowUsed: number;
     contextWindowMax: number;
+    waitingForPermission?: boolean;
     updatedAt: string;
 }
 
@@ -62,6 +63,7 @@ export function serializeSession(s: import('../models/session').Session): Serial
         costUsd: s.costUsd,
         contextWindowUsed: s.contextWindowUsed,
         contextWindowMax: s.contextWindowMax,
+        waitingForPermission: s.waitingForPermission,
         updatedAt: s.updatedAt.toISOString(),
     };
 }

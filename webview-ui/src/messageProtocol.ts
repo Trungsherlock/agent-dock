@@ -25,6 +25,7 @@ export interface SerializedSession {
     costUsd: number;
     contextWindowUsed: number;
     contextWindowMax: number;
+    waitingForPermission?: boolean;
     updatedAt: string;
 }
 

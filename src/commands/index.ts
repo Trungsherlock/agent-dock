@@ -14,15 +14,26 @@ export function registerCommands(
     cohortManager: CohortManager,
     boardProvider: BoardViewProvider,
 ): void {
+    // Track the last terminal used to run a Claude command so we can associate it
+    // with the session when the JSONL file appears (activeTerminal may have changed by then)
+    let lastClaudeTerminal: vscode.Terminal | undefined;
+    context.subscriptions.push(
+        vscode.window.onDidChangeActiveTerminal(t => { lastClaudeTerminal = t ?? lastClaudeTerminal; })
+    );
+
     // Watch for new Claude sessions (live terminal → new .jsonl file)
     watchForNewClaudeSessions(context, (filePath: string) => {
         if (!isConversationFile(filePath)) { return; }
-        const terminal = vscode.window.activeTerminal;
-        if (!terminal) { return; }
-        if (sessionManager.getAll().some(s => s.terminal === terminal)) { return; }
 
         const id = path.basename(filePath, '.jsonl');
-        const session = sessionManager.add(id, terminal.name, 'uncategorized', terminal);
+        if (sessionManager.getById(id)) { return; }
+
+        // Try to find the terminal: prefer active, fall back to last known
+        const terminal = vscode.window.activeTerminal ?? lastClaudeTerminal;
+        const existingSession = sessionManager.getAll().find(s => s.terminal === terminal);
+        const resolvedTerminal = existingSession ? undefined : terminal;
+
+        const session = sessionManager.add(id, resolvedTerminal?.name ?? `Claude ${id.slice(0, 8)}`, 'uncategorized', resolvedTerminal);
         sessionManager.setClaudeLogFile(session.id, filePath);
         const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager);
         context.subscriptions.push({ dispose: () => watcher.dispose() });
