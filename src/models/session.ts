@@ -36,4 +36,5 @@ export interface Session {
     contextWindowMax: number;
     updatedAt: Date;
     claudeLogFile?: string;
+    waitingForPermission?: boolean;
 }

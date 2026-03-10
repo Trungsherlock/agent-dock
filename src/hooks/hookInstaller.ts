@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 
 const HOOK_SCRIPT_NAME = 'agent-dock-hook.py';
-const HOOK_EVENTS = ['PreToolUse', 'PostToolUse', 'Stop', 'SubagentStop'];
+const HOOK_EVENTS = ['PreToolUse', 'PostToolUse', 'Stop', 'SubagentStop', 'PermissionRequest'];
 
 const HOOK_SCRIPT = `#!/usr/bin/env python3
 import sys, json
