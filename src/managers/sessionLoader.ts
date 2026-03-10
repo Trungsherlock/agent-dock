@@ -85,7 +85,7 @@ export function loadHistoricalSessions(
         const birthtime = fs.statSync(filePath).birthtime;
         const session = sessionManager.add(id, name, 'uncategorized', undefined, birthtime);
         sessionManager.setClaudeLogFile(session.id, filePath);
-        sessionManager.setStatus(session.id, 'done');
+        sessionManager.setStatus(session.id, 'idle');
         const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager, true);
         context.subscriptions.push({ dispose: () => watcher.dispose() });
     }
