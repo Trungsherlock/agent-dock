@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Droppable } from "@hello-pangea/dnd";
 import { useBoardContext } from "../context/useBoardContext";
 import type { BoardList } from "../context/BoardContext";
@@ -10,11 +10,26 @@ interface ListProps {
 }
 
 export function List({ list }: ListProps) {
-  const { state, newSession, renameCohort, deleteCohort } = useBoardContext();
+  const { state, newSession, renameCohort, deleteCohort, archivedSessions, fetchArchivedSessions, addExistingSession } = useBoardContext();
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(list.title);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showAddMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowAddMenu(false);
+        setShowArchived(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showAddMenu]);
 
   const cards = list.cardIds.map((id) => state.cards[id]).filter(Boolean);
   const openCard = openCardId ? state.cards[openCardId] : null;
@@ -163,21 +178,72 @@ export function List({ list }: ListProps) {
 
         {/* Footer */}
         <div
-          className="flex items-center px-3.5 py-2"
+          className="relative flex items-center px-3.5 py-2"
           style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+          ref={menuRef}
         >
           <button
-            onClick={newSession}
+            onClick={() => setShowAddMenu((v) => !v)}
             className="flex items-center gap-1.5 transition-opacity hover:opacity-60"
-            style={{
-              fontFamily: "monospace",
-              fontSize: "10px",
-              color: "#4e566a",
-            }}
+            style={{ fontFamily: "monospace", fontSize: "10px", color: "#4e566a" }}
           >
             <span style={{ fontSize: "14px", lineHeight: 1 }}>+</span>
             <span>Add a card</span>
           </button>
+
+          {showAddMenu && (
+            <div
+              className="absolute bottom-full left-0 mb-1 z-10 rounded overflow-hidden"
+              style={{
+                backgroundColor: "#1e2330",
+                border: "1px solid rgba(255,255,255,0.1)",
+                minWidth: "160px",
+              }}
+            >
+              {!showArchived ? (
+                <>
+                  <button
+                    className="w-full text-left px-3 py-2 transition-colors hover:bg-white/5"
+                    style={{ fontFamily: "monospace", fontSize: "10px", color: "#8891a8" }}
+                    onClick={() => {
+                      fetchArchivedSessions();
+                      setShowArchived(true);
+                    }}
+                  >
+                    Existing agent
+                  </button>
+                  <button
+                    className="w-full text-left px-3 py-2 transition-colors hover:bg-white/5"
+                    style={{ fontFamily: "monospace", fontSize: "10px", color: "#8891a8" }}
+                    onClick={() => { newSession(); setShowAddMenu(false); }}
+                  >
+                    New agent
+                  </button>
+                </>
+              ) : archivedSessions.length === 0 ? (
+                <div
+                  className="px-3 py-2"
+                  style={{ fontFamily: "monospace", fontSize: "10px", color: "#4e566a" }}
+                >
+                  No archived agents
+                </div>
+              ) : (
+                archivedSessions.map((s) => (
+                  <button
+                    key={s.id}
+                    className="w-full text-left px-3 py-2 transition-colors hover:bg-white/5"
+                    style={{ fontFamily: "monospace", fontSize: "10px", color: "#8891a8" }}
+                    onClick={() => { addExistingSession(s.id); setShowAddMenu(false); setShowArchived(false); }}
+                  >
+                    {s.name}
+                    <span style={{ color: "#4e566a", marginLeft: "6px" }}>
+                      {new Date(s.createdAt).toLocaleDateString()}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
 

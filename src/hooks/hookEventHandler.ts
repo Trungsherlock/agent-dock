@@ -36,7 +36,7 @@ export function handleHookEvent(event: HookEvent, sessionManager: SessionManager
         case 'SubagentStop':
             sessionManager.setCurrentTool(event.session_id, undefined);
             sessionManager.setPermissionRequest(event.session_id, false);
-            sessionManager.setStatus(event.session_id, 'done');
+            sessionManager.setStatus(event.session_id, 'idle');
             break;
     }
 }

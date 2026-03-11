@@ -14,7 +14,6 @@ const STATUS_STYLE: Record<string, { color: string; glow: string; label: string 
   running:  { color: "#00d4aa", glow: "rgba(0,212,170,0.35)",   label: "running" },
   thinking: { color: "#818cf8", glow: "rgba(129,140,248,0.35)", label: "thinking" },
   idle:     { color: "#f0a500", glow: "rgba(240,165,0,0.3)",    label: "idle" },
-  done:     { color: "#4ade80", glow: "rgba(74,222,128,0.2)",   label: "done" },
   error:    { color: "#ff4d6a", glow: "rgba(255,77,106,0.35)",  label: "error" },
 };
 
@@ -68,7 +67,7 @@ function extractPathFromInput(input: string): string {
 }
 
 export function Card({ card, index, onClick }: CardProps) {
-  const { focusSession, resumeSession } = useBoardContext();
+  const { focusSession } = useBoardContext();
   const [, setTick] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const runStartedAt = useRef<number>(0);
@@ -148,7 +147,7 @@ export function Card({ card, index, onClick }: CardProps) {
 
           <div
             onClick={() =>
-              card.status === "idle" ? resumeSession(card.id) : focusSession(card.id)
+              focusSession(card.id)
             }
             style={{
               padding: "11px 14px 11px 18px",

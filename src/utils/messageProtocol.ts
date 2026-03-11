@@ -1,4 +1,5 @@
 import { SessionStatus, ToolCall } from '../models/session';
+import { type ArchivedSession } from '../constants';
 
 export interface SerializeSession {
     id: string;
@@ -27,8 +28,8 @@ export interface SerializedCohort {
 }
 
 export type ExtensionMessage =
-    | { command: 'stateUpdate'; sessions: SerializeSession[], cohorts: SerializedCohort[] };
-
+    | { command: 'stateUpdate'; sessions: SerializeSession[], cohorts: SerializedCohort[] }
+    | { command: 'archivedSessionsUpdate'; sessions: ArchivedSession[] };
 
 export type WebviewMessage = 
     | { command: 'ready' }
@@ -42,7 +43,9 @@ export type WebviewMessage =
     | { command: 'createCohort'; label: string }
     | { command: 'renameCohort'; cohortId: string; newLabel: string }
     | { command: 'deleteCohort'; cohortId: string }
-    | { command: 'resumeSession'; sessionId: string };
+    | { command: 'resumeSession'; sessionId: string }
+    | { command: 'getArchivedSessions' }
+    | { command: 'addExistingSession'; sessionId: string };
 
 
 export function serializeSession(s: import('../models/session').Session): SerializeSession {

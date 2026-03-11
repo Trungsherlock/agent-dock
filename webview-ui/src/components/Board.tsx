@@ -99,7 +99,6 @@ function StatusBar() {
   }
 
   const active = cards.filter((c) => c.status === "running" || c.status === "thinking").length;
-  const done = cards.filter((c) => c.status === "done").length;
   const tokens = cards.reduce(
     (sum, c) => sum + c.tokensInput + c.tokensOutput,
     0,
@@ -118,11 +117,6 @@ function StatusBar() {
         <span className="flex items-center gap-1">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
           {active} running
-        </span>
-      )}
-      {done > 0 && (
-        <span style={{ color: "var(--vscode-descriptionForeground)" }}>
-          ✓ {done} done
         </span>
       )}
       {tokens > 0 && (

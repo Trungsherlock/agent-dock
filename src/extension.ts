@@ -3,7 +3,7 @@ import { SessionManager } from './managers/sessionManager';
 import { CohortManager } from './managers/cohortManager';
 import { SessionTreeProvider } from './views/sessionTreeProvider';
 import { BoardViewProvider } from './views/boardViewProvider';
-import { loadSessions, loadCohorts, setupPersistence, loadHistoricalSessions } from './managers/sessionLoader';
+import { loadSessions, loadCohorts, setupPersistence } from './managers/sessionLoader';
 import { registerCommands } from './commands/index';
 import { installHooks } from './hooks/hookInstaller';
 import { HookServer } from './hooks/hookServer';
@@ -24,8 +24,15 @@ export function activate(context: vscode.ExtensionContext) {
 
     loadCohorts(context, cohortManager);
     loadSessions(context, sessionManager);
+    context.subscriptions.push(
+        vscode.window.onDidCloseTerminal((closed) => {
+            const session = sessionManager.getAll().find(s => s.terminal === closed);
+            if (session) {
+                sessionManager.remove(session.id);
+            }
+        })
+    );
     setupPersistence(context, sessionManager, cohortManager);
-    loadHistoricalSessions(context, sessionManager);
 
     vscode.window.registerTreeDataProvider('agentdock.sessionsView', treeProvider);
     context.subscriptions.push(

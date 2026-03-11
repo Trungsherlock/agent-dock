@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-export type SessionStatus = 'running' | 'thinking' | 'idle' | 'done' | 'error';
+export type SessionStatus = 'running' | 'thinking' | 'idle' | 'error';
 
 export type AgentFramework = 'claude' | 'custom';
 
