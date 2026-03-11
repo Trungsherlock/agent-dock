@@ -4,6 +4,9 @@ import * as path from 'path';
 import { SessionManager } from '../managers/sessionManager';
 import { CohortManager } from '../managers/cohortManager';
 import { serializeSession, WebviewMessage, ExtensionMessage } from '../utils/messageProtocol';
+import { getArchivedSessions } from '../managers/sessionLoader';
+import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
+import { NAMES_KEY } from '../constants';
 
 export class BoardViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'agentdock.boardView';
@@ -46,13 +49,6 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
             const session = this._sessionManager.getAll().find(s => s.terminal === terminal);
             if (session) {
                 this._view?.webview.postMessage({ command: 'sessionFocused', sessionId: session.id });
-            }
-        });
-
-        vscode.window.onDidCloseTerminal((closed) => {
-            const session = this._sessionManager.getAll().find(s => s.terminal === closed);
-            if (session) {
-                this._view?.webview.postMessage({ command: 'sessionClosed', sessionId: session.id });
             }
         });
     }
@@ -137,6 +133,33 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                     }
                 }
                 this._cohortManager.remove(message.cohortId);
+                break;
+            }
+            case 'getArchivedSessions': {
+                const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+                const nameMap = this._context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
+                const sessions = getArchivedSessions(this._sessionManager, workspacePath, nameMap);
+                this._view?.webview.postMessage({ command: 'archivedSessionsUpdate', sessions });
+                break;
+            }
+            case 'addExistingSession': {
+                const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+                const nameMap = this._context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
+                const archived = getArchivedSessions(this._sessionManager, workspacePath, nameMap);
+                const found = archived.find(a => a.id === message.sessionId);
+                if (!found) { break; }
+                const session = this._sessionManager.add(found.id, found.name, 'uncategorized');
+                this._sessionManager.setClaudeLogFile(session.id, found.claudeLogFile);
+                this._sessionManager.setStatus(session.id, 'idle');
+                const terminal = vscode.window.createTerminal({
+                    name: found.name,
+                    cwd: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
+                });
+                terminal.sendText(`claude --resume ${found.id}`);
+                terminal.show();
+                this._sessionManager.setTerminal(found.id, terminal);
+                const watcher = new ClaudeLogWatcher(session.id, found.claudeLogFile, this._sessionManager, true);
+                this._context.subscriptions.push({ dispose: () => watcher.dispose() });
                 break;
             }
         }

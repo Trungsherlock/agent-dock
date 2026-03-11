@@ -1,4 +1,4 @@
-export type SessionStatus = 'running' | 'thinking' | 'idle' | 'done' | 'error';
+export type SessionStatus = 'running' | 'thinking' | 'idle' | 'error';
 
 export interface SerializedSession {
     id: string;
@@ -34,8 +34,16 @@ export interface SerializedCohort {
     label: string;
 }
 
+export interface ArchivedSession {
+    id: string;
+    name: string;
+    claudeLogFile: string;
+    createdAt: string;
+}
+
 export type ExtensionMessage =
-    | { command: 'stateUpdate'; sessions: SerializedSession[]; cohorts: SerializedCohort[] };
+    | { command: 'stateUpdate'; sessions: SerializedSession[]; cohorts: SerializedCohort[] }
+    | { command: 'archivedSessionsUpdate'; sessions: ArchivedSession[] };
 
 export type WebviewMessage =
     | { command: 'ready' }
@@ -49,4 +57,6 @@ export type WebviewMessage =
     | { command: 'createCohort'; label: string }
     | { command: 'renameCohort'; cohortId: string; newLabel: string }
     | { command: 'deleteCohort'; cohortId: string }
-    | { command: 'resumeSession'; sessionId: string };
+    | { command: 'resumeSession'; sessionId: string }
+    | { command: 'getArchivedSessions' }
+    | { command: 'addExistingSession'; sessionId: string };

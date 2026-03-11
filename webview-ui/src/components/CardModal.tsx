@@ -7,8 +7,7 @@ import type { SessionStatus } from "../messageProtocol";
 const STATUS_CYCLE: Record<SessionStatus, SessionStatus> = {
   running: "thinking",
   thinking: "idle",
-  idle: "done",
-  done: "idle",
+  idle: "error",
   error: "idle",
 };
 
@@ -16,7 +15,6 @@ const STATUS_MAP: Record<SessionStatus, { label: string; color: string }> = {
   running: { label: "Running", color: "#f59e0b" },
   thinking: { label: "Thinking", color: "#818cf8" },
   idle: { label: "Idle", color: "#858585" },
-  done: { label: "Done", color: "#89d185" },
   error: { label: "Error", color: "#ef4444" },
 };
 

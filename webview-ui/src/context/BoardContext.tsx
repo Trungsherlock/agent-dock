@@ -1,10 +1,11 @@
-import { createContext, useReducer, useEffect, type ReactNode } from "react";
+import { createContext, useReducer, useEffect, useState, type ReactNode } from "react";
 import vscode from "../vscodeApi";
 import type {
   SerializedSession,
   SerializedCohort,
   ExtensionMessage,
   SessionStatus,
+  ArchivedSession,
 } from "../messageProtocol";
 
 const COLOR_PALETTE = [
@@ -264,12 +265,12 @@ const MOCK_STATE: BoardState = {
       contextWindowUsed: 136000,
       contextWindowMax: 200000,
     },
-    // status: done — very high context (red bar ~90%), all tools done, with note
+    // status: idle — very high context (red bar ~90%), all tools done, with note
     "s-done": {
       id: "s-done",
       name: "CSS Overhaul",
       cohortId: "cohort-frontend",
-      status: "done",
+      status: "idle",
       framework: "claude",
       note: "Completed. Waiting for design review.",
       createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
@@ -492,6 +493,7 @@ function reducer(state: BoardState, action: Action): BoardState {
 
 interface BoardContextValue {
   state: BoardState;
+  archivedSessions: ArchivedSession[];
   moveCard: (
     cardId: string,
     fromListId: string,
@@ -508,12 +510,15 @@ interface BoardContextValue {
   createCohort: (label: string) => void;
   renameCohort: (id: string, label: string) => void;
   deleteCohort: (id: string) => void;
+  fetchArchivedSessions: () => void;
+  addExistingSession: (sessionId: string) => void;
 }
 
 const BoardContext = createContext<BoardContextValue | null>(null);
 
 export function BoardProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, empty);
+  const [archivedSessions, setArchivedSessions] = useState<ArchivedSession[]>([]);
 
   useEffect(() => {
     vscode.postMessage({ command: "ready" });
@@ -525,6 +530,8 @@ export function BoardProvider({ children }: { children: ReactNode }) {
           sessions: msg.sessions,
           cohorts: msg.cohorts,
         });
+      } else if (msg.command === "archivedSessionsUpdate") {
+        setArchivedSessions(msg.sessions);
       }
     };
     window.addEventListener("message", handler);
@@ -603,10 +610,19 @@ export function BoardProvider({ children }: { children: ReactNode }) {
     vscode.postMessage({ command: "deleteCohort", cohortId: id });
   };
 
+  const fetchArchivedSessions = () => {
+    vscode.postMessage({ command: "getArchivedSessions" });
+  };
+
+  const addExistingSession = (sessionId: string) => {
+    vscode.postMessage({ command: "addExistingSession", sessionId });
+  };
+
   return (
     <BoardContext.Provider
       value={{
         state,
+        archivedSessions,
         moveCard,
         renameCard,
         setNote,
@@ -618,6 +634,8 @@ export function BoardProvider({ children }: { children: ReactNode }) {
         createCohort,
         renameCohort,
         deleteCohort,
+        fetchArchivedSessions,
+        addExistingSession,
       }}
     >
       {children}

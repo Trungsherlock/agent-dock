@@ -5,7 +5,7 @@ import { SessionManager } from './sessionManager';
 import { CohortManager, type Cohort } from './cohortManager';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
 import { getAllClaudeLogFiles, isConversationFile } from '../claudeWatcher';
-import { SESSIONS_KEY, COHORTS_KEY, type PersistedSession } from '../constants';
+import { SESSIONS_KEY, COHORTS_KEY, NAMES_KEY, type PersistedSession, type ArchivedSession } from '../constants';
 import type { SessionStatus } from '../models/session';
 
 export function loadSessions(
@@ -23,6 +23,15 @@ export function loadSessions(
                 sessionManager.setStatus(session.id, s.status as SessionStatus);
             }
             sessionManager.setClaudeLogFile(session.id, s.claudeLogFile);
+            const existing = vscode.window.terminals.find(t => t.name === s.name);
+            const terminal = existing ?? vscode.window.createTerminal({
+                name: s.name,
+                cwd: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
+            });
+            if (!existing) {
+                terminal.sendText(`claude --resume ${session.id}`);
+            }
+            sessionManager.setTerminal(session.id, terminal);
             const watcher = new ClaudeLogWatcher(session.id, s.claudeLogFile, sessionManager, true);
             context.subscriptions.push({ dispose: () => watcher.dispose() });
         } else {
@@ -63,6 +72,12 @@ export function setupPersistence(
                 claudeLogFile: s.claudeLogFile,
             }));
             context.workspaceState.update(SESSIONS_KEY, data);
+
+            const existing = context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
+            for (const s of sessionManager.getAll()) {
+                existing[s.id] = s.name;
+            }
+            context.workspaceState.update(NAMES_KEY, existing);
         })
     );
     context.subscriptions.push(
@@ -72,21 +87,38 @@ export function setupPersistence(
     );
 }
 
-export function loadHistoricalSessions(
-    context: vscode.ExtensionContext,
+// export function loadHistoricalSessions(
+//     context: vscode.ExtensionContext,
+//     sessionManager: SessionManager,
+// ): void {
+//     const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+//     for (const filePath of workspacePath ? getAllClaudeLogFiles(workspacePath) : []) {
+//         const id = path.basename(filePath, '.jsonl');
+//         if (sessionManager.getById(id)) { continue; }
+//         if (!isConversationFile(filePath)) { continue; }
+//         const name = id.slice(0, 8);
+//         const birthtime = fs.statSync(filePath).birthtime;
+//         const session = sessionManager.add(id, name, 'uncategorized', undefined, birthtime);
+//         sessionManager.setClaudeLogFile(session.id, filePath);
+//         sessionManager.setStatus(session.id, 'idle');
+//         const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager, true);
+//         context.subscriptions.push({ dispose: () => watcher.dispose() });
+//     }
+// }
+
+export function getArchivedSessions(
     sessionManager: SessionManager,
-): void {
-    const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    workspacePath?: string,
+    nameMap: Record<string, string> = {},
+): ArchivedSession[] {
+    let archiveSessions: ArchivedSession[] = [];
     for (const filePath of workspacePath ? getAllClaudeLogFiles(workspacePath) : []) {
         const id = path.basename(filePath, '.jsonl');
         if (sessionManager.getById(id)) { continue; }
         if (!isConversationFile(filePath)) { continue; }
-        const name = id.slice(0, 8);
-        const birthtime = fs.statSync(filePath).birthtime;
-        const session = sessionManager.add(id, name, 'uncategorized', undefined, birthtime);
-        sessionManager.setClaudeLogFile(session.id, filePath);
-        sessionManager.setStatus(session.id, 'idle');
-        const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager, true);
-        context.subscriptions.push({ dispose: () => watcher.dispose() });
+        const name = nameMap[id] ?? id.slice(0, 8);
+        const birthtime = fs.statSync(filePath).birthtime.toISOString();
+        archiveSessions.push({id, name, claudeLogFile: filePath, createdAt: birthtime});        
     }
+    return archiveSessions;
 }
