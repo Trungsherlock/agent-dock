@@ -18,6 +18,7 @@ export function loadSessions(
             const id = path.basename(s.claudeLogFile, '.jsonl');
             const session = sessionManager.add(id, s.name, s.cohortId);
             if (s.note) { sessionManager.setNote(session.id, s.note); }
+            if (s.skills?.length) { sessionManager.setSkills(session.id, s.skills); }
             const autoStatuses = ['running', 'thinking'];
             if (s.status && !autoStatuses.includes(s.status)) {
                 sessionManager.setStatus(session.id, s.status as SessionStatus);
@@ -70,6 +71,7 @@ export function setupPersistence(
                 note: s.note,
                 status: s.status,
                 claudeLogFile: s.claudeLogFile,
+                skills: s.skills,
             }));
             context.workspaceState.update(SESSIONS_KEY, data);
 

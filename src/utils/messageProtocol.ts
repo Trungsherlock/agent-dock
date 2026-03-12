@@ -19,6 +19,7 @@ export interface SerializeSession {
     contextWindowUsed: number;
     contextWindowMax: number;
     waitingForPermission?: boolean;
+    skills?: string[];
     updatedAt: string;
 }
 
@@ -45,7 +46,8 @@ export type WebviewMessage =
     | { command: 'deleteCohort'; cohortId: string }
     | { command: 'resumeSession'; sessionId: string }
     | { command: 'getArchivedSessions' }
-    | { command: 'addExistingSession'; sessionId: string };
+    | { command: 'addExistingSession'; sessionId: string }
+    | { command: 'openAddAgentPanel'; cohortId: string };
 
 
 export function serializeSession(s: import('../models/session').Session): SerializeSession {
@@ -67,6 +69,7 @@ export function serializeSession(s: import('../models/session').Session): Serial
         contextWindowUsed: s.contextWindowUsed,
         contextWindowMax: s.contextWindowMax,
         waitingForPermission: s.waitingForPermission,
+        skills: s.skills,
         updatedAt: s.updatedAt.toISOString(),
     };
 }

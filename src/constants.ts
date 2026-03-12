@@ -10,6 +10,7 @@ export interface PersistedSession {
     note: string;
     status: string;
     claudeLogFile?: string;
+    skills?: string[];
 }
 
 export interface ArchivedSession {

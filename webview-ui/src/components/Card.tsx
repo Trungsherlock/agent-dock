@@ -208,6 +208,28 @@ export function Card({ card, index, onClick }: CardProps) {
               </button>
             </div>
 
+            {/* Skill tags */}
+            {card.skills && card.skills.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                {card.skills.map((skill) => (
+                  <span
+                    key={skill}
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "9px",
+                      padding: "1px 6px",
+                      borderRadius: "4px",
+                      background: "rgba(91,124,246,0.12)",
+                      color: "#7b96f5",
+                      border: "1px solid rgba(91,124,246,0.2)",
+                    }}
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Status row */}
             <div
               style={{

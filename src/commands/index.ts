@@ -33,8 +33,13 @@ export function registerCommands(
         const existingSession = sessionManager.getAll().find(s => s.terminal === terminal);
         const resolvedTerminal = existingSession ? undefined : terminal;
 
-        const session = sessionManager.add(id, resolvedTerminal?.name ?? `Claude ${id.slice(0, 8)}`, 'uncategorized', resolvedTerminal);
+        const pending = resolvedTerminal ? sessionManager.consumePendingAgent(resolvedTerminal.name) : undefined;
+        const cohortId = pending?.cohortId ?? 'uncategorized';
+        const session = sessionManager.add(id, resolvedTerminal?.name ?? `Claude ${id.slice(0, 8)}`, cohortId, resolvedTerminal);
         sessionManager.setClaudeLogFile(session.id, filePath);
+        if (pending?.skills?.length) {
+            sessionManager.setSkills(session.id, pending.skills);
+        }
         const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager);
         context.subscriptions.push({ dispose: () => watcher.dispose() });
     });

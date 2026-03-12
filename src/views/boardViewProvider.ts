@@ -7,6 +7,7 @@ import { serializeSession, WebviewMessage, ExtensionMessage } from '../utils/mes
 import { getArchivedSessions } from '../managers/sessionLoader';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
 import { NAMES_KEY } from '../constants';
+import { AddAgentPanel } from '../panels/AddAgentPanel';
 
 export class BoardViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'agentdock.boardView';
@@ -140,6 +141,31 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 const nameMap = this._context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
                 const sessions = getArchivedSessions(this._sessionManager, workspacePath, nameMap);
                 this._view?.webview.postMessage({ command: 'archivedSessionsUpdate', sessions });
+                break;
+            }
+            case 'openAddAgentPanel': {
+                const projectRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+                AddAgentPanel.createOrShow(
+                    this._context,
+                    projectRoot,
+                    message.cohortId,
+                    (config, filePath) => {
+                        const terminal = vscode.window.createTerminal({
+                            name: config.name,
+                            cwd: projectRoot,
+                        });
+                        terminal.show();
+                        terminal.sendText('claude');
+                        this._sessionManager.registerPendingAgent(
+                            config.name,
+                            config.cohortId ?? 'uncategorized',
+                            config.skills ?? [],
+                        );
+                        vscode.window.showInformationMessage(
+                            `Agent '${config.name}' created at ${filePath}`,
+                        );
+                    },
+                );
                 break;
             }
             case 'addExistingSession': {
