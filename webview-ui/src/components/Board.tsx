@@ -26,21 +26,37 @@ export function Board() {
 
   const submitNew = () => {
     const label = newLabel.trim();
-    if (label) {
-      createCohort(label);
-    }
+    if (label) createCohort(label);
     setNewLabel("");
     setAdding(false);
   };
 
   return (
-    <div className="flex flex-col gap-2 p-3 overflow-y-auto h-full">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        padding: "12px",
+        overflowY: "auto",
+        height: "100%",
+        background: "#0d1117",
+      }}
+    >
       <StatusBar />
       <DragDropContext onDragEnd={onDragEnd}>
         {state.listOrder.length === 0 && !adding ? (
           <div
-            className="flex items-center justify-center h-32 text-xs"
-            style={{ color: "var(--vscode-descriptionForeground)" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "120px",
+              fontFamily: "monospace",
+              fontSize: "11px",
+              color: "#4e5a72",
+              fontStyle: "italic",
+            }}
           >
             No cohorts yet.
           </div>
@@ -54,35 +70,51 @@ export function Board() {
       </DragDropContext>
 
       {adding ? (
-        <div className="flex gap-2 px-1">
+        <div style={{ padding: "0 2px" }}>
           <input
             autoFocus
-            className="flex-1 rounded px-2 py-1 text-sm border"
-            style={{
-              background: "var(--vscode-input-background)",
-              color: "var(--vscode-input-foreground)",
-              borderColor: "var(--vscode-input-border)",
-            }}
             placeholder="Cohort name..."
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") submitNew();
-              if (e.key === "Escape") {
-                setAdding(false);
-                setNewLabel("");
-              }
+              if (e.key === "Escape") { setAdding(false); setNewLabel(""); }
             }}
             onBlur={submitNew}
+            style={{
+              width: "100%",
+              background: "#161b2e",
+              border: "1px solid rgba(129,140,248,0.4)",
+              borderRadius: "8px",
+              padding: "7px 12px",
+              color: "#dde1f0",
+              fontFamily: "monospace",
+              fontSize: "11px",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
           />
         </div>
       ) : (
         <button
           onClick={() => setAdding(true)}
-          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-opacity hover:opacity-70"
-          style={{ color: "var(--vscode-descriptionForeground)" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            fontFamily: "monospace",
+            fontSize: "11px",
+            color: "#6b7a96",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "4px 2px",
+            transition: "color 0.15s ease",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "#a0aec8"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7a96"; }}
         >
-          <span className="text-base leading-none">+</span>
+          <span style={{ fontSize: "16px", lineHeight: 1, fontWeight: 300 }}>+</span>
           <span>Add cohort</span>
         </button>
       )}
@@ -94,38 +126,71 @@ function StatusBar() {
   const { state } = useBoardContext();
   const cards = Object.values(state.cards);
 
-  if (cards.length === 0) {
-    return null;
-  }
+  if (cards.length === 0) return null;
 
   const active = cards.filter((c) => c.status === "running" || c.status === "thinking").length;
-  const tokens = cards.reduce(
-    (sum, c) => sum + c.tokensInput + c.tokensOutput,
-    0,
-  );
+  const tokens = cards.reduce((sum, c) => sum + c.tokensInput + c.tokensOutput, 0);
   const cost = cards.reduce((sum, c) => sum + c.costUsd, 0);
 
   return (
     <div
-      className="flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs mb-2 flex-wrap"
       style={{
-        background: "var(--vscode-badge-background)",
-        color: "var(--vscode-badge-foreground)",
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        padding: "7px 14px",
+        borderRadius: "10px",
+        background: "#12161f",
+        border: "1px solid rgba(255,255,255,0.07)",
+        marginBottom: "4px",
+        flexWrap: "wrap",
       }}
     >
       {active > 0 && (
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          {active} running
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            fontFamily: "monospace",
+            fontSize: "10px",
+            fontWeight: 600,
+            color: "#00d4aa",
+          }}
+        >
+          <span
+            className="status-dot-active"
+            style={{
+              display: "inline-block",
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              backgroundColor: "#00d4aa",
+              boxShadow: "0 0 5px rgba(0,212,170,0.6)",
+            }}
+          />
+          {active} active
         </span>
       )}
       {tokens > 0 && (
-        <span style={{ color: "var(--vscode-descriptionForeground)" }}>
+        <span
+          style={{
+            fontFamily: "monospace",
+            fontSize: "10px",
+            color: "#6b7a96",
+          }}
+        >
           {formatTokens(tokens)}
         </span>
       )}
       {cost > 0 && (
-        <span style={{ color: "var(--vscode-descriptionForeground)" }}>
+        <span
+          style={{
+            fontFamily: "monospace",
+            fontSize: "10px",
+            color: "#6b7a96",
+          }}
+        >
           ${cost.toFixed(3)}
         </span>
       )}
@@ -134,12 +199,7 @@ function StatusBar() {
 }
 
 function formatTokens(n: number): string {
-  if (n >= 1_000_000) {
-    return `${(n / 1_000_000).toFixed(1)}M tok`;
-  }
-  if (n >= 1_000) {
-    return `${(n / 1_000).toFixed(1)}k tok`;
-  }
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M tok`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k tok`;
   return `${n} tok`;
 }
-

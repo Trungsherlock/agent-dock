@@ -61,4 +61,5 @@ export type WebviewMessage =
     | { command: 'resumeSession'; sessionId: string }
     | { command: 'getArchivedSessions' }
     | { command: 'addExistingSession'; sessionId: string }
-    | { command: 'openAddAgentPanel'; cohortId: string };
+    | { command: 'openAddAgentPanel'; cohortId: string }
+    | { command: 'openFile'; filePath: string };

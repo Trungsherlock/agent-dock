@@ -32,3 +32,9 @@ body,
 .status-dot-pulse-green { animation: pulse-green 2s infinite; }
 .status-dot-pulse-red   { animation: pulse-red 1.5s infinite; }
 .spin-icon              { display: inline-block; animation: spin 1.2s linear infinite; }
+
+@keyframes dot-fade {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+.status-dot-active { animation: dot-fade 0.8s ease-in-out infinite; }

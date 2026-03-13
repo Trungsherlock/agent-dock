@@ -47,7 +47,8 @@ export type WebviewMessage =
     | { command: 'resumeSession'; sessionId: string }
     | { command: 'getArchivedSessions' }
     | { command: 'addExistingSession'; sessionId: string }
-    | { command: 'openAddAgentPanel'; cohortId: string };
+    | { command: 'openAddAgentPanel'; cohortId: string }
+    | { command: 'openFile'; filePath: string };
 
 
 export function serializeSession(s: import('../models/session').Session): SerializeSession {

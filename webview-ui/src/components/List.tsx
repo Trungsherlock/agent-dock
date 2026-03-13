@@ -65,16 +65,32 @@ export function List({ list }: ListProps) {
       <div
         className="flex flex-col w-full"
         style={{
-          backgroundColor: "#141720",
+          backgroundColor: "#12161f",
           border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: "10px",
+          borderRadius: "14px",
         }}
       >
         {/* Header */}
         <div
-          className="flex items-center gap-2 px-3.5 py-2.5"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+          className="flex items-center gap-2 px-4 py-3"
+          style={{
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(255,255,255,0.02)",
+            borderRadius: "14px 14px 0 0",
+          }}
         >
+          {/* Color dot */}
+          {/* <span
+            style={{
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              backgroundColor: list.color,
+              flexShrink: 0,
+              boxShadow: `0 0 6px ${list.color}80`,
+            }}
+          /> */}
+
           {editing ? (
             <input
               ref={inputRef}
@@ -83,10 +99,10 @@ export function List({ list }: ListProps) {
               style={{
                 fontFamily: "monospace",
                 fontSize: "11px",
-                fontWeight: 600,
+                fontWeight: 700,
                 letterSpacing: "0.8px",
                 textTransform: "uppercase",
-                color: "#8891a8",
+                color: "#c8cedf",
                 background: "transparent",
                 borderColor: "rgba(255,255,255,0.15)",
               }}
@@ -104,10 +120,10 @@ export function List({ list }: ListProps) {
               style={{
                 fontFamily: "monospace",
                 fontSize: "11px",
-                fontWeight: 600,
+                fontWeight: 700,
                 letterSpacing: "0.8px",
                 textTransform: "uppercase",
-                color: "#8891a8",
+                color: "#b0bbd4",
                 cursor: isUncategorized ? "default" : "pointer",
               }}
               onDoubleClick={startEdit}
@@ -116,26 +132,56 @@ export function List({ list }: ListProps) {
               {list.title}
             </span>
           )}
+
+          {/* Card count badge */}
           <span
             style={{
               fontFamily: "monospace",
               fontSize: "10px",
-              color: "#4e566a",
-              background: "#252c3d",
-              padding: "1px 7px",
+              fontWeight: 600,
+              color: "#8a97b4",
+              background: "rgba(255,255,255,0.07)",
+              padding: "1px 8px",
               borderRadius: "99px",
+              border: "1px solid rgba(255,255,255,0.08)",
             }}
           >
             {cards.length}
           </span>
+
           {!isUncategorized && (
             <button
               onClick={handleDelete}
-              className="text-xs leading-none transition-opacity hover:opacity-60"
-              style={{ color: "#4e566a" }}
+              style={{
+                fontSize: "11px",
+                lineHeight: 1,
+                color: "#6b7a96",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "2px 4px",
+                borderRadius: "4px",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#ff4d6a";
+                e.currentTarget.style.background = "rgba(255,77,106,0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#6b7a96";
+                e.currentTarget.style.background = "none";
+              }}
               title="Delete cohort"
             >
-              ✕
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="20px"
+                viewBox="0 -960 960 960"
+                width="20px"
+                fill="#FFFFFF"
+              >
+                <path d="m291-240-51-51 189-189-189-189 51-51 189 189 189-189 51 51-189 189 189 189-51 51-189-189-189 189Z" />
+              </svg>  
             </button>
           )}
         </div>
@@ -147,17 +193,23 @@ export function List({ list }: ListProps) {
               ref={provided.innerRef}
               {...provided.droppableProps}
               style={{
-                minHeight: "32px",
+                minHeight: "40px",
                 backgroundColor: snapshot.isDraggingOver
-                  ? list.color + "10"
+                  ? list.color + "0d"
                   : "transparent",
                 transition: "background-color 0.15s ease",
+                padding: snapshot.isDraggingOver ? "2px 0" : undefined,
               }}
             >
               {cards.length === 0 && !snapshot.isDraggingOver && (
                 <div
-                  className="text-xs text-center py-4 italic"
-                  style={{ color: "#4e566a" }}
+                  style={{
+                    fontSize: "11px",
+                    textAlign: "center",
+                    padding: "20px 12px",
+                    color: "#4e5a72",
+                    fontStyle: "italic",
+                  }}
                 >
                   No agents here
                 </div>
@@ -178,33 +230,75 @@ export function List({ list }: ListProps) {
 
         {/* Footer */}
         <div
-          className="relative flex items-center px-3.5 py-2"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+          className="relative flex items-center px-4 py-2.5"
+          style={{
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(255,255,255,0.015)",
+            borderRadius: "0 0 14px 14px",
+          }}
           ref={menuRef}
         >
           <button
             onClick={() => setShowAddMenu((v) => !v)}
-            className="flex items-center gap-1.5 transition-opacity hover:opacity-60"
-            style={{ fontFamily: "monospace", fontSize: "10px", color: "#4e566a" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontFamily: "monospace",
+              fontSize: "11px",
+              color: showAddMenu ? "#a0aec8" : "#7b8aa8",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+              transition: "color 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#a0aec8";
+            }}
+            onMouseLeave={(e) => {
+              if (!showAddMenu) e.currentTarget.style.color = "#7b8aa8";
+            }}
           >
-            <span style={{ fontSize: "14px", lineHeight: 1 }}>+</span>
-            <span>Add a card</span>
+            <span
+              style={{
+                fontSize: "16px",
+                lineHeight: 1,
+                color: showAddMenu ? "#a0aec8" : "#6b7a96",
+                fontWeight: 300,
+              }}
+            >
+              +
+            </span>
+            <span>Add agent</span>
           </button>
 
           {showAddMenu && (
             <div
-              className="absolute bottom-full left-0 mb-1 z-10 rounded overflow-hidden"
+              className="absolute bottom-full left-0 mb-2 z-10"
               style={{
-                backgroundColor: "#1e2330",
+                backgroundColor: "#1a2035",
                 border: "1px solid rgba(255,255,255,0.1)",
-                minWidth: "160px",
+                borderRadius: "10px",
+                overflow: "hidden",
+                minWidth: "170px",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
               }}
             >
               {!showArchived ? (
                 <>
                   <button
-                    className="w-full text-left px-3 py-2 transition-colors hover:bg-white/5"
-                    style={{ fontFamily: "monospace", fontSize: "10px", color: "#8891a8" }}
+                    className="w-full text-left transition-colors hover:bg-white/5"
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "11px",
+                      color: "#9aa8c4",
+                      padding: "9px 14px",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "block",
+                    }}
                     onClick={() => {
                       fetchArchivedSessions();
                       setShowArchived(true);
@@ -212,18 +306,41 @@ export function List({ list }: ListProps) {
                   >
                     Existing agent
                   </button>
+                  <div
+                    style={{
+                      height: "1px",
+                      background: "rgba(255,255,255,0.06)",
+                      margin: "0 10px",
+                    }}
+                  />
                   <button
-                    className="w-full text-left px-3 py-2 transition-colors hover:bg-white/5"
-                    style={{ fontFamily: "monospace", fontSize: "10px", color: "#8891a8" }}
-                    onClick={() => { openAddAgentPanel(list.id); setShowAddMenu(false); }}
+                    className="w-full text-left transition-colors hover:bg-white/5"
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "11px",
+                      color: "#9aa8c4",
+                      padding: "9px 14px",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "block",
+                    }}
+                    onClick={() => {
+                      openAddAgentPanel(list.id);
+                      setShowAddMenu(false);
+                    }}
                   >
                     New agent
                   </button>
                 </>
               ) : archivedSessions.length === 0 ? (
                 <div
-                  className="px-3 py-2"
-                  style={{ fontFamily: "monospace", fontSize: "10px", color: "#4e566a" }}
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: "11px",
+                    color: "#6b7a96",
+                    padding: "10px 14px",
+                  }}
                 >
                   No archived agents
                 </div>
@@ -231,12 +348,26 @@ export function List({ list }: ListProps) {
                 archivedSessions.map((s) => (
                   <button
                     key={s.id}
-                    className="w-full text-left px-3 py-2 transition-colors hover:bg-white/5"
-                    style={{ fontFamily: "monospace", fontSize: "10px", color: "#8891a8" }}
-                    onClick={() => { addExistingSession(s.id); setShowAddMenu(false); setShowArchived(false); }}
+                    className="w-full text-left transition-colors hover:bg-white/5"
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "11px",
+                      color: "#9aa8c4",
+                      padding: "9px 14px",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "block",
+                      width: "100%",
+                    }}
+                    onClick={() => {
+                      addExistingSession(s.id);
+                      setShowAddMenu(false);
+                      setShowArchived(false);
+                    }}
                   >
                     {s.name}
-                    <span style={{ color: "#4e566a", marginLeft: "6px" }}>
+                    <span style={{ color: "#6b7a96", marginLeft: "6px" }}>
                       {new Date(s.createdAt).toLocaleDateString()}
                     </span>
                   </button>

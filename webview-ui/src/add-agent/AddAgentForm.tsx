@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import vscode from '../vscodeApi'
 
-// ── Types (mirror src/panels/AddAgentPanel.ts) ────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface SkillInfo {
   name: string
@@ -37,68 +37,60 @@ const MODEL_OPTIONS = [
   { label: 'Inherit from session', value: '' },
 ]
 
-// ── Shared style tokens ───────────────────────────────────────────────────────
+// ── Style tokens (aligned with Card/List) ────────────────────────────────────
 
 const S = {
-  bg: '#0e1117',
-  surface: '#141720',
+  bg: '#0d1117',
+  surface: '#12161f',
+  card: '#161b2e',
+  cardHover: '#1e2540',
   border: 'rgba(255,255,255,0.08)',
-  borderHover: 'rgba(255,255,255,0.15)',
-  textPrimary: '#c9d1e0',
-  textMuted: '#8891a8',
-  textDim: '#4e566a',
+  borderStrong: 'rgba(255,255,255,0.13)',
+  textPrimary: '#dde1f0',
+  textSecondary: '#b0bbd4',
+  textMuted: '#8a97b4',
+  textDim: '#6b7a96',
   accent: '#818cf8',
-  accentHover: '#6366f1',
+  accentBg: 'rgba(129,140,248,0.12)',
   error: '#ff4d6a',
+  errorBg: 'rgba(255,77,106,0.1)',
   warning: '#f0a500',
+  warningBg: 'rgba(240,165,0,0.1)',
   green: '#00d4aa',
-  mono: 'monospace',
+  mono: 'monospace' as const,
 }
 
-const label: React.CSSProperties = {
-  display: 'block',
-  fontFamily: S.mono,
-  fontSize: '10px',
-  fontWeight: 600,
-  letterSpacing: '0.8px',
-  textTransform: 'uppercase',
-  color: S.textMuted,
-  marginBottom: '6px',
-}
-
-const input: React.CSSProperties = {
+const inputStyle: React.CSSProperties = {
   width: '100%',
-  background: '#1a1f2e',
+  background: S.card,
   border: `1px solid ${S.border}`,
-  borderRadius: '6px',
-  padding: '7px 10px',
+  borderRadius: '8px',
+  padding: '8px 12px',
   color: S.textPrimary,
   fontFamily: S.mono,
   fontSize: '12px',
   outline: 'none',
   boxSizing: 'border-box',
+  transition: 'border-color 0.15s',
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AddAgentForm() {
   const [projectName, setProjectName] = useState('')
-  const [skills, setSkills] = useState<SkillInfo[] | null>(null) // null = loading
+  const [skills, setSkills] = useState<SkillInfo[] | null>(null)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [model, setModel] = useState('claude-sonnet-4-6')
-  // const [scope, setScope] = useState<'global' | 'project'>('project')
   const [tools, setTools] = useState<string[]>([...TOOL_OPTIONS])
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
   const [systemPrompt, setSystemPrompt] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Listen for messages from the extension
   useEffect(() => {
     vscode.postMessage({ command: 'ready' })
-
     const handler = (event: MessageEvent) => {
       const msg = event.data as ExtMsg
       if (msg.command === 'initData') {
@@ -114,23 +106,19 @@ export function AddAgentForm() {
   }, [])
 
   const toggleTool = (tool: string) => {
-    setTools(prev =>
-      prev.includes(tool) ? prev.filter(t => t !== tool) : [...prev, tool],
-    )
+    setTools(prev => prev.includes(tool) ? prev.filter(t => t !== tool) : [...prev, tool])
   }
 
   const toggleSkill = (skillName: string) => {
     setSelectedSkills(prev =>
-      prev.includes(skillName)
-        ? prev.filter(s => s !== skillName)
-        : [...prev, skillName],
+      prev.includes(skillName) ? prev.filter(s => s !== skillName) : [...prev, skillName],
     )
   }
 
   const canSubmit = name.trim().length > 0 && description.trim().length > 0 && !submitting
 
   const handleSubmit = () => {
-    if (!canSubmit) { return }
+    if (!canSubmit) return
     setError(null)
     setSubmitting(true)
     const config: AgentConfig = {
@@ -141,100 +129,94 @@ export function AddAgentForm() {
       skills: selectedSkills,
       systemPrompt: systemPrompt.trim(),
       scope: 'project',
-      projectRoot: '',   // filled in by AddAgentPanel.ts
-      cohortId: '',      // filled in by AddAgentPanel.ts
+      projectRoot: '',
+      cohortId: '',
     }
     vscode.postMessage({ command: 'createAgent', config })
   }
 
-  const handleCancel = () => {
-    vscode.postMessage({ command: 'cancel' })
-  }
+  const handleCancel = () => vscode.postMessage({ command: 'cancel' })
 
   const projectSkills = skills?.filter(s => s.scope === 'project') ?? []
   const globalSkills = skills?.filter(s => s.scope === 'global') ?? []
 
   return (
     <div style={{ background: S.bg, minHeight: '100vh', color: S.textPrimary, fontFamily: S.mono }}>
+
       {/* Header */}
       <div style={{
-        padding: '16px 20px',
+        padding: '14px 20px',
         borderBottom: `1px solid ${S.border}`,
+        background: 'rgba(255,255,255,0.02)',
         display: 'flex',
         alignItems: 'center',
         gap: '10px',
       }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: S.textPrimary }}>
-          Add Agent
+        <span style={{
+          fontSize: '11px',
+          fontWeight: 700,
+          letterSpacing: '0.8px',
+          textTransform: 'uppercase',
+          color: S.textSecondary,
+        }}>
+          New Agent
         </span>
         {projectName && (
-          <span style={{ fontSize: '11px', color: S.textDim }}>— {projectName}</span>
+          <span style={{
+            fontSize: '10px',
+            color: S.textDim,
+            fontWeight: 400,
+          }}>
+            — {projectName}
+          </span>
         )}
       </div>
 
       {/* Body */}
-      <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-        {/* ── Section 1: Basic Info ── */}
+        {/* Basic Info */}
         <Section title="Basic Info">
-          <Field label="Agent Name *">
+          <Field label="Name *">
             <input
-              style={input}
+              style={inputStyle}
               placeholder="e.g. API Builder"
               value={name}
               onChange={e => setName(e.target.value)}
               autoFocus
+              onFocus={e => { e.currentTarget.style.borderColor = `${S.accent}60` }}
+              onBlur={e => { e.currentTarget.style.borderColor = S.border }}
             />
           </Field>
           <Field label="Description *">
             <input
-              style={input}
-              placeholder="What does this agent do? Claude uses this to decide when to delegate."
+              style={inputStyle}
+              placeholder="What does this agent do?"
               value={description}
               onChange={e => setDescription(e.target.value)}
+              onFocus={e => { e.currentTarget.style.borderColor = `${S.accent}60` }}
+              onBlur={e => { e.currentTarget.style.borderColor = S.border }}
             />
           </Field>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <Field label="Model">
-              <select
-                style={{ ...input, cursor: 'pointer' }}
-                value={model}
-                onChange={e => setModel(e.target.value)}
-              >
-                {MODEL_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </Field>
-            {/* <Field label="Scope">
-              <div style={{ display: 'flex', gap: '12px', paddingTop: '6px' }}>
-                {(['project', 'global'] as const).map(s => (
-                  <label
-                    key={s}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: S.textPrimary }}
-                  >
-                    <input
-                      type="radio"
-                      name="scope"
-                      value={s}
-                      checked={scope === s}
-                      onChange={() => setScope(s)}
-                      style={{ accentColor: S.accent }}
-                    />
-                    {s === 'project' ? 'This project' : 'Global'}
-                  </label>
-                ))}
-              </div>
-            </Field> */}
-          </div>
+          <Field label="Model">
+            <select
+              style={{ ...inputStyle, cursor: 'pointer' }}
+              value={model}
+              onChange={e => setModel(e.target.value)}
+            >
+              {MODEL_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Field>
         </Section>
 
-        {/* ── Section 2: Tools ── */}
+        {/* Tools */}
         <Section title="Tools">
-          <p style={{ fontSize: '11px', color: S.textDim, margin: '0 0 10px' }}>
+          <p style={{ fontSize: '11px', color: S.textDim, margin: '0 0 8px' }}>
             Unselected tools will be blocked for this agent.
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {TOOL_OPTIONS.map(tool => (
               <CheckChip
                 key={tool}
@@ -246,70 +228,66 @@ export function AddAgentForm() {
           </div>
         </Section>
 
-        {/* ── Section 3: Skills ── */}
+        {/* Skills */}
         <Section title="Skills">
           {skills === null ? (
             <p style={{ fontSize: '11px', color: S.textDim }}>Loading skills...</p>
           ) : skills.length === 0 ? (
             <p style={{ fontSize: '11px', color: S.textDim }}>
-              No skills found. Create skills in <code style={{ color: S.textMuted }}>.claude/skills/</code> to attach them here.
+              No skills found. Create skills in{' '}
+              <code style={{ color: S.textMuted, background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: '4px' }}>
+                .claude/skills/
+              </code>{' '}
+              to attach them here.
             </p>
           ) : (
             <>
               {selectedSkills.length > 8 && (
                 <div style={{
-                  background: 'rgba(240,165,0,0.1)',
-                  border: `1px solid ${S.warning}`,
-                  borderRadius: '6px',
+                  background: S.warningBg,
+                  border: `1px solid ${S.warning}40`,
+                  borderRadius: '8px',
                   padding: '8px 12px',
                   fontSize: '11px',
                   color: S.warning,
-                  marginBottom: '12px',
+                  marginBottom: '8px',
                 }}>
                   Many skills selected — this may exceed Claude's context budget.
                 </div>
               )}
               {projectSkills.length > 0 && (
-                <SkillGroup
-                  title="Project Skills"
-                  skills={projectSkills}
-                  selected={selectedSkills}
-                  onToggle={toggleSkill}
-                />
+                <SkillGroup title="Project" skills={projectSkills} selected={selectedSkills} onToggle={toggleSkill} />
               )}
               {globalSkills.length > 0 && (
-                <SkillGroup
-                  title="Global Skills"
-                  skills={globalSkills}
-                  selected={selectedSkills}
-                  onToggle={toggleSkill}
-                />
+                <SkillGroup title="Global" skills={globalSkills} selected={selectedSkills} onToggle={toggleSkill} />
               )}
             </>
           )}
         </Section>
 
-        {/* ── Section 4: System Prompt ── */}
+        {/* System Prompt */}
         <Section title="System Prompt">
           <textarea
             style={{
-              ...input,
-              minHeight: '120px',
+              ...inputStyle,
+              minHeight: '100px',
               resize: 'vertical',
-              lineHeight: '1.5',
+              lineHeight: '1.6',
             }}
             placeholder="You are a specialized agent for..."
             value={systemPrompt}
             onChange={e => setSystemPrompt(e.target.value)}
+            onFocus={e => { e.currentTarget.style.borderColor = `${S.accent}60` }}
+            onBlur={e => { e.currentTarget.style.borderColor = S.border }}
           />
         </Section>
 
         {/* Error banner */}
         {error && (
           <div style={{
-            background: 'rgba(255,77,106,0.1)',
-            border: `1px solid ${S.error}`,
-            borderRadius: '6px',
+            background: S.errorBg,
+            border: `1px solid ${S.error}40`,
+            borderRadius: '8px',
             padding: '10px 14px',
             fontSize: '12px',
             color: S.error,
@@ -328,19 +306,28 @@ export function AddAgentForm() {
         padding: '12px 20px',
         display: 'flex',
         justifyContent: 'flex-end',
-        gap: '10px',
+        gap: '8px',
       }}>
         <button
           onClick={handleCancel}
           style={{
             background: 'transparent',
             border: `1px solid ${S.border}`,
-            borderRadius: '6px',
-            padding: '7px 16px',
+            borderRadius: '8px',
+            padding: '7px 18px',
             color: S.textMuted,
             fontFamily: S.mono,
-            fontSize: '12px',
+            fontSize: '11px',
             cursor: 'pointer',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = S.borderStrong
+            e.currentTarget.style.color = S.textSecondary
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = S.border
+            e.currentTarget.style.color = S.textMuted
           }}
         >
           Cancel
@@ -349,16 +336,24 @@ export function AddAgentForm() {
           onClick={handleSubmit}
           disabled={!canSubmit}
           style={{
-            background: canSubmit ? S.accent : '#2a2f3d',
-            border: 'none',
-            borderRadius: '6px',
-            padding: '7px 16px',
-            color: canSubmit ? '#fff' : S.textDim,
+            background: canSubmit ? S.accentBg : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${canSubmit ? `${S.accent}50` : 'rgba(255,255,255,0.06)'}`,
+            borderRadius: '8px',
+            padding: '7px 18px',
+            color: canSubmit ? S.accent : S.textDim,
             fontFamily: S.mono,
-            fontSize: '12px',
+            fontSize: '11px',
+            fontWeight: 700,
             cursor: canSubmit ? 'pointer' : 'not-allowed',
-            fontWeight: 600,
-            transition: 'background 0.15s',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => {
+            if (!canSubmit) return
+            e.currentTarget.style.background = 'rgba(129,140,248,0.2)'
+          }}
+          onMouseLeave={e => {
+            if (!canSubmit) return
+            e.currentTarget.style.background = S.accentBg
           }}
         >
           {submitting ? 'Creating...' : 'Create Agent'}
@@ -368,25 +363,30 @@ export function AddAgentForm() {
   )
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div style={{
+      background: S.surface,
+      border: `1px solid ${S.border}`,
+      borderRadius: '12px',
+      overflow: 'hidden',
+    }}>
       <div style={{
+        padding: '10px 14px',
+        borderBottom: `1px solid ${S.border}`,
+        background: 'rgba(255,255,255,0.02)',
         fontFamily: S.mono,
         fontSize: '10px',
-        fontWeight: 600,
+        fontWeight: 700,
         letterSpacing: '0.8px',
         textTransform: 'uppercase' as const,
-        color: S.textMuted,
-        marginBottom: '12px',
-        paddingBottom: '6px',
-        borderBottom: `1px solid ${S.border}`,
+        color: S.textSecondary,
       }}>
         {title}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {children}
       </div>
     </div>
@@ -396,7 +396,18 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label: labelText, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label style={label}>{labelText}</label>
+      <label style={{
+        display: 'block',
+        fontFamily: S.mono,
+        fontSize: '9px',
+        fontWeight: 700,
+        letterSpacing: '0.6px',
+        textTransform: 'uppercase',
+        color: S.textDim,
+        marginBottom: '6px',
+      }}>
+        {labelText}
+      </label>
       {children}
     </div>
   )
@@ -407,18 +418,20 @@ function CheckChip({ label: labelText, checked, onChange }: { label: string; che
     <button
       onClick={onChange}
       style={{
-        background: checked ? 'rgba(129,140,248,0.15)' : '#1a1f2e',
-        border: `1px solid ${checked ? S.accent : S.border}`,
-        borderRadius: '6px',
-        padding: '5px 12px',
+        background: checked ? S.accentBg : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${checked ? `${S.accent}50` : S.border}`,
+        borderRadius: '99px',
+        padding: '3px 10px',
         color: checked ? S.accent : S.textMuted,
         fontFamily: S.mono,
-        fontSize: '11px',
+        fontSize: '10px',
+        fontWeight: checked ? 700 : 400,
         cursor: 'pointer',
-        transition: 'all 0.1s',
+        transition: 'all 0.12s',
+        letterSpacing: '0.3px',
       }}
     >
-      {checked ? '✓ ' : ''}{labelText}
+      {labelText}
     </button>
   )
 }
@@ -435,8 +448,15 @@ function SkillGroup({
   onToggle: (name: string) => void
 }) {
   return (
-    <div style={{ marginBottom: '12px' }}>
-      <div style={{ fontSize: '10px', color: S.textDim, marginBottom: '8px', letterSpacing: '0.5px' }}>
+    <div>
+      <div style={{
+        fontSize: '9px',
+        fontWeight: 700,
+        letterSpacing: '0.6px',
+        textTransform: 'uppercase' as const,
+        color: S.textDim,
+        marginBottom: '8px',
+      }}>
         {title}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -447,31 +467,37 @@ function SkillGroup({
               key={skill.name}
               onClick={() => onToggle(skill.name)}
               style={{
-                background: isSelected ? 'rgba(129,140,248,0.1)' : '#1a1f2e',
-                border: `1px solid ${isSelected ? S.accent : S.border}`,
-                borderRadius: '8px',
+                background: isSelected ? 'rgba(129,140,248,0.08)' : S.card,
+                border: `1px solid ${isSelected ? `${S.accent}50` : S.border}`,
+                borderRadius: '10px',
                 padding: '10px 12px',
                 cursor: 'pointer',
                 textAlign: 'left',
-                transition: 'all 0.1s',
+                transition: 'all 0.12s',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
               }}
+              onMouseEnter={e => {
+                if (!isSelected) e.currentTarget.style.background = S.cardHover
+              }}
+              onMouseLeave={e => {
+                if (!isSelected) e.currentTarget.style.background = S.card
+              }}
             >
-              {/* Checkbox indicator */}
+              {/* Checkbox */}
               <div style={{
                 width: '14px',
                 height: '14px',
-                borderRadius: '3px',
+                borderRadius: '4px',
                 border: `1.5px solid ${isSelected ? S.accent : S.border}`,
-                background: isSelected ? S.accent : 'transparent',
+                background: isSelected ? S.accentBg : 'transparent',
                 flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '9px',
-                color: '#fff',
+                color: S.accent,
               }}>
                 {isSelected ? '✓' : ''}
               </div>
@@ -482,7 +508,7 @@ function SkillGroup({
                 </div>
                 {skill.description && (
                   <div style={{
-                    fontSize: '11px',
+                    fontSize: '10px',
                     color: S.textDim,
                     marginTop: '2px',
                     overflow: 'hidden',
@@ -511,11 +537,12 @@ function Badge({ label, color }: { label: string; color: string }) {
     <span style={{
       fontFamily: S.mono,
       fontSize: '9px',
+      fontWeight: 600,
       color,
-      background: `${color}20`,
-      border: `1px solid ${color}40`,
-      borderRadius: '4px',
-      padding: '1px 6px',
+      background: `${color}18`,
+      border: `1px solid ${color}35`,
+      borderRadius: '99px',
+      padding: '1px 7px',
       letterSpacing: '0.4px',
     }}>
       {label}

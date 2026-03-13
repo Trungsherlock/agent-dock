@@ -168,6 +168,16 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 );
                 break;
             }
+            case 'openFile': {
+                const wsPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+                const filePath = path.isAbsolute(message.filePath)
+                    ? message.filePath
+                    : path.join(wsPath, message.filePath);
+                vscode.workspace.openTextDocument(vscode.Uri.file(filePath)).then(doc => {
+                    vscode.window.showTextDocument(doc, { preserveFocus: false });
+                });
+                break;
+            }
             case 'addExistingSession': {
                 const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
                 const nameMap = this._context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
