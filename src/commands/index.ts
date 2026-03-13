@@ -14,21 +14,17 @@ export function registerCommands(
     cohortManager: CohortManager,
     boardProvider: BoardViewProvider,
 ): void {
-    // Track the last terminal used to run a Claude command so we can associate it
-    // with the session when the JSONL file appears (activeTerminal may have changed by then)
     let lastClaudeTerminal: vscode.Terminal | undefined;
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTerminal(t => { lastClaudeTerminal = t ?? lastClaudeTerminal; })
     );
 
-    // Watch for new Claude sessions (live terminal → new .jsonl file)
     watchForNewClaudeSessions(context, (filePath: string) => {
         if (!isConversationFile(filePath)) { return; }
 
         const id = path.basename(filePath, '.jsonl');
         if (sessionManager.getById(id)) { return; }
 
-        // Try to find the terminal: prefer active, fall back to last known
         const terminal = vscode.window.activeTerminal ?? lastClaudeTerminal;
         const existingSession = sessionManager.getAll().find(s => s.terminal === terminal);
         const resolvedTerminal = existingSession ? undefined : terminal;
@@ -44,7 +40,6 @@ export function registerCommands(
         context.subscriptions.push({ dispose: () => watcher.dispose() });
     });
 
-    // Auto-detect non-Claude agents opening in terminal
     context.subscriptions.push(
         vscode.window.onDidOpenTerminal(terminal => {
             if (sessionManager.getAll().some(s => s.terminal === terminal)) { return; }
@@ -58,14 +53,12 @@ export function registerCommands(
         })
     );
 
-    // Remove session when terminal closes
     context.subscriptions.push(
         vscode.window.onDidCloseTerminal(terminal => {
             sessionManager.removeByTerminal(terminal);
         })
     );
 
-    // Panel management
     let agentDockPanel: vscode.WebviewPanel | undefined;
     context.subscriptions.push(
         vscode.commands.registerCommand('agentdock.openPanel', () => {

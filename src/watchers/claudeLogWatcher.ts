@@ -42,7 +42,6 @@ export class ClaudeLogWatcher {
             fs.closeSync(fd);
             this.offset = stat.size;
 
-            // Prepend any partial line saved from the previous read
             const text = this.lineBuffer + buf.toString('utf-8');
             const lines = text.split('\n');
             this.lineBuffer = lines.pop() ?? '';

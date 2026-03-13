@@ -5,7 +5,7 @@ import { SessionManager } from './sessionManager';
 import { CohortManager, type Cohort } from './cohortManager';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
 import { getAllClaudeLogFiles, isConversationFile } from '../claudeWatcher';
-import { SESSIONS_KEY, COHORTS_KEY, NAMES_KEY, type PersistedSession, type ArchivedSession } from '../constants';
+import { SESSIONS_KEY, COHORTS_KEY, NAMES_KEY, SKILLS_KEY, type PersistedSession, type ArchivedSession } from '../constants';
 import type { SessionStatus } from '../models/session';
 
 export function loadSessions(
@@ -75,11 +75,14 @@ export function setupPersistence(
             }));
             context.workspaceState.update(SESSIONS_KEY, data);
 
-            const existing = context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
+            const existingName = context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
+            const existingSkills = context.workspaceState.get<Record<string, string[]>>(SKILLS_KEY, {});
             for (const s of sessionManager.getAll()) {
-                existing[s.id] = s.name;
+                existingName[s.id] = s.name;
+                if (s.skills?.length) { existingSkills[s.id] = s.skills; }
             }
-            context.workspaceState.update(NAMES_KEY, existing);
+            context.workspaceState.update(NAMES_KEY, existingName);
+            context.workspaceState.update(SKILLS_KEY, existingSkills);
         })
     );
     context.subscriptions.push(
@@ -112,6 +115,7 @@ export function getArchivedSessions(
     sessionManager: SessionManager,
     workspacePath?: string,
     nameMap: Record<string, string> = {},
+    skillsMap: Record<string, string[]> = {},
 ): ArchivedSession[] {
     let archiveSessions: ArchivedSession[] = [];
     for (const filePath of workspacePath ? getAllClaudeLogFiles(workspacePath) : []) {
@@ -120,7 +124,8 @@ export function getArchivedSessions(
         if (!isConversationFile(filePath)) { continue; }
         const name = nameMap[id] ?? id.slice(0, 8);
         const birthtime = fs.statSync(filePath).birthtime.toISOString();
-        archiveSessions.push({id, name, claudeLogFile: filePath, createdAt: birthtime});        
+        const skills = skillsMap[id];
+        archiveSessions.push({id, name, claudeLogFile: filePath, createdAt: birthtime, ...(skills?.length ? { skills } : {})});
     }
     return archiveSessions;
 }

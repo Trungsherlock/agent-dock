@@ -20,7 +20,6 @@ export class SkillScanner {
             this._scanDir(globalDir, 'global'),
         ]);
 
-        // Project skills take precedence — deduplicate by name
         const seen = new Set<string>();
         const result: SkillInfo[] = [];
         for (const skill of [...projectSkills, ...globalSkills]) {
