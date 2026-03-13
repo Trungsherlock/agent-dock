@@ -29,11 +29,6 @@
           "id": "agentdock.boardView",
           "name": "Agent Board",
           "type": "webview"
-        },
-        {
-          "id": "agentdock.sessionsView",
-          "name": "Session (list)",
-          "contextualTitle": "AgentDock"
         }
       ]
     },
@@ -55,26 +50,9 @@
       {
         "command": "agentdock.focusSession",
         "title": "Switch Agent Session"
-      },
-      {
-        "command": "agentdock.openPanel",
-        "title": "Open Agent Dock Panel",
-        "icon": "$(multiple-windows)"
       }
     ],
     "menus": {
-      "view/title": [
-        {
-          "command": "agentdock.newSession",
-          "when": "view == agentdock.sessionsView",
-          "group": "navigation"
-        },
-        {
-          "command": "agentdock.openPanel",
-          "when": "view == agentdock.boardView",
-          "group": "navigation"
-        }
-      ],
       "view/item/context": [
         {
           "command": "agentdock.endSession",
@@ -92,12 +70,7 @@
         }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "agentdock.sessionsView",
-        "contents": "No active agent sessions.\n[New Agent Session](command:agentdock.newSession)"
-      }
-    ]
+    "viewsWelcome": []
   },
   "scripts": {
     "vscode:prepublish": "npm run compile && npm run build-webview",
