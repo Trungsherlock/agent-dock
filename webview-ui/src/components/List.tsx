@@ -14,6 +14,7 @@ export function List({ list }: ListProps) {
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(list.title);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -50,15 +51,7 @@ export function List({ list }: ListProps) {
     setEditing(false);
   };
 
-  const handleDelete = () => {
-    const msg =
-      cards.length > 0
-        ? `Delete "${list.title}"? ${cards.length} session(s) will move to Uncategorized.`
-        : `Delete cohort "${list.title}"?`;
-    if (window.confirm(msg)) {
-      deleteCohort(list.id);
-    }
-  };
+  const handleDelete = () => setShowDeletePopup(true);
 
   return (
     <>
@@ -153,7 +146,6 @@ export function List({ list }: ListProps) {
             <button
               onClick={handleDelete}
               style={{
-                fontSize: "11px",
                 lineHeight: 1,
                 color: "#6b7a96",
                 background: "none",
@@ -162,6 +154,7 @@ export function List({ list }: ListProps) {
                 padding: "2px 4px",
                 borderRadius: "4px",
                 transition: "all 0.15s ease",
+                flexShrink: 0,
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = "#ff4d6a";
@@ -173,15 +166,9 @@ export function List({ list }: ListProps) {
               }}
               title="Delete cohort"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                height="20px"
-                viewBox="0 -960 960 960"
-                width="20px"
-                fill="#FFFFFF"
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#FFFFFF">
                 <path d="m291-240-51-51 189-189-189-189 51-51 189 189 189-189 51 51-189 189 189 189-51 51-189-189-189 189Z" />
-              </svg>  
+              </svg>
             </button>
           )}
         </div>
@@ -384,6 +371,86 @@ export function List({ list }: ListProps) {
           list={list}
           onClose={() => setOpenCardId(null)}
         />
+      )}
+
+      {showDeletePopup && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.5)",
+          }}
+          onClick={() => setShowDeletePopup(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#1a2035",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "14px",
+              padding: "24px",
+              width: "280px",
+              boxShadow: "0 16px 48px rgba(0,0,0,0.6)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 700, color: "#dde1f0" }}>
+                Delete cohort?
+              </span>
+              <span style={{ fontFamily: "monospace", fontSize: "11px", color: "#6b7a96", lineHeight: 1.5 }}>
+                {cards.length > 0
+                  ? `"${list.title}" will be deleted. ${cards.length} agent(s) will move to Uncategorized.`
+                  : `"${list.title}" will be permanently deleted.`}
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowDeletePopup(false)}
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "11px",
+                  padding: "6px 14px",
+                  borderRadius: "7px",
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "#9aa8c4",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { deleteCohort(list.id); setShowDeletePopup(false); }}
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  padding: "6px 14px",
+                  borderRadius: "7px",
+                  background: "rgba(255,77,106,0.15)",
+                  border: "1px solid rgba(255,77,106,0.35)",
+                  color: "#ff4d6a",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,77,106,0.25)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,77,106,0.15)"; }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

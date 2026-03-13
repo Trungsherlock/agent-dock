@@ -2,8 +2,6 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { SessionManager } from '../managers/sessionManager';
 import { CohortManager } from '../managers/cohortManager';
-import { BoardViewProvider } from '../views/boardViewProvider';
-import { SessionTreeItem } from '../views/sessionTreeItem';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
 import { watchForNewClaudeSessions, isConversationFile } from '../claudeWatcher';
 import { CLAUDE_CODE_AGENT_PREFIX } from '../constants';
@@ -12,7 +10,6 @@ export function registerCommands(
     context: vscode.ExtensionContext,
     sessionManager: SessionManager,
     cohortManager: CohortManager,
-    boardProvider: BoardViewProvider,
 ): void {
     let lastClaudeTerminal: vscode.Terminal | undefined;
     context.subscriptions.push(
@@ -59,24 +56,6 @@ export function registerCommands(
         })
     );
 
-    let agentDockPanel: vscode.WebviewPanel | undefined;
-    context.subscriptions.push(
-        vscode.commands.registerCommand('agentdock.openPanel', () => {
-            if (agentDockPanel) { agentDockPanel.reveal(); return; }
-            agentDockPanel = vscode.window.createWebviewPanel(
-                'agentdock.panel', 'Agent Dock', vscode.ViewColumn.Beside,
-                {
-                    enableScripts: true,
-                    retainContextWhenHidden: true,
-                    localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'webview-ui', 'dist')],
-                }
-            );
-            agentDockPanel.webview.html = boardProvider.getHtmlForWebview(agentDockPanel.webview);
-            boardProvider.wirePanel(agentDockPanel);
-            agentDockPanel.onDidDispose(() => { agentDockPanel = undefined; });
-        })
-    );
-
     let nextIdx = 1;
     context.subscriptions.push(
         vscode.commands.registerCommand('agentdock.newSession', async () => {
@@ -85,30 +64,6 @@ export function registerCommands(
             const terminal = vscode.window.createTerminal({ name, cwd });
             terminal.show();
             terminal.sendText('claude');
-        })
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('agentdock.focusSession', (item: SessionTreeItem) => {
-            item.session.terminal?.show();
-        })
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('agentdock.endSession', (item: SessionTreeItem) => {
-            item.session.terminal?.dispose();
-            sessionManager.remove(item.session.id);
-        })
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('agentdock.renameSession', async (item: SessionTreeItem) => {
-            const newName = await vscode.window.showInputBox({
-                prompt: 'New session name',
-                value: item.session.name,
-            });
-            if (!newName) { return; }
-            sessionManager.rename(item.session.id, newName);
         })
     );
 }
