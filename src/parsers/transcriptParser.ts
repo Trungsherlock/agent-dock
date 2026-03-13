@@ -27,7 +27,6 @@ interface ClaudeEntry {
     };
 }
 
-/** Returns true when a turn_duration record is processed (turn complete). */
 export function processTranscriptLine(
     raw: string,
     sessionId: string,

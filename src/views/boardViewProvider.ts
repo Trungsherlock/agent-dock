@@ -6,7 +6,8 @@ import { CohortManager } from '../managers/cohortManager';
 import { serializeSession, WebviewMessage, ExtensionMessage } from '../utils/messageProtocol';
 import { getArchivedSessions } from '../managers/sessionLoader';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
-import { NAMES_KEY } from '../constants';
+import { NAMES_KEY, SKILLS_KEY } from '../constants';
+import { AddAgentPanel } from '../panels/AddAgentPanel';
 
 export class BoardViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'agentdock.boardView';
@@ -111,7 +112,6 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 terminal.show();
                 terminal.sendText(`claude --resume ${message.sessionId}`);
                 this._sessionManager.setTerminal(message.sessionId, terminal);
-                // this._sessionManager.setStatus(message.sessionId, 'active');
                 break;
             }
             case 'newSession': {
@@ -138,19 +138,47 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
             case 'getArchivedSessions': {
                 const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
                 const nameMap = this._context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
-                const sessions = getArchivedSessions(this._sessionManager, workspacePath, nameMap);
+                const skillsMap = this._context.workspaceState.get<Record<string, string[]>>(SKILLS_KEY, {});
+                const sessions = getArchivedSessions(this._sessionManager, workspacePath, nameMap, skillsMap);
                 this._view?.webview.postMessage({ command: 'archivedSessionsUpdate', sessions });
+                break;
+            }
+            case 'openAddAgentPanel': {
+                const projectRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+                AddAgentPanel.createOrShow(
+                    this._context,
+                    projectRoot,
+                    message.cohortId,
+                    (config, filePath) => {
+                        const terminal = vscode.window.createTerminal({
+                            name: config.name,
+                            cwd: projectRoot,
+                        });
+                        terminal.show();
+                        terminal.sendText('claude');
+                        this._sessionManager.registerPendingAgent(
+                            config.name,
+                            config.cohortId ?? 'uncategorized',
+                            config.skills ?? [],
+                        );
+                        vscode.window.showInformationMessage(
+                            `Agent '${config.name}' created at ${filePath}`,
+                        );
+                    },
+                );
                 break;
             }
             case 'addExistingSession': {
                 const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
                 const nameMap = this._context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
-                const archived = getArchivedSessions(this._sessionManager, workspacePath, nameMap);
+                const skillsMap = this._context.workspaceState.get<Record<string, string[]>>(SKILLS_KEY, {});
+                const archived = getArchivedSessions(this._sessionManager, workspacePath, nameMap, skillsMap);
                 const found = archived.find(a => a.id === message.sessionId);
                 if (!found) { break; }
                 const session = this._sessionManager.add(found.id, found.name, 'uncategorized');
                 this._sessionManager.setClaudeLogFile(session.id, found.claudeLogFile);
                 this._sessionManager.setStatus(session.id, 'idle');
+                if (found.skills?.length) { this._sessionManager.setSkills(session.id, found.skills); }
                 const terminal = vscode.window.createTerminal({
                     name: found.name,
                     cwd: vscode.workspace.workspaceFolders?.[0].uri.fsPath,

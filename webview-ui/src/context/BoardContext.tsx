@@ -512,6 +512,7 @@ interface BoardContextValue {
   deleteCohort: (id: string) => void;
   fetchArchivedSessions: () => void;
   addExistingSession: (sessionId: string) => void;
+  openAddAgentPanel: (cohortId: string) => void;
 }
 
 const BoardContext = createContext<BoardContextValue | null>(null);
@@ -618,6 +619,10 @@ export function BoardProvider({ children }: { children: ReactNode }) {
     vscode.postMessage({ command: "addExistingSession", sessionId });
   };
 
+  const openAddAgentPanel = (cohortId: string) => {
+    vscode.postMessage({ command: "openAddAgentPanel", cohortId });
+  };
+
   return (
     <BoardContext.Provider
       value={{
@@ -636,6 +641,7 @@ export function BoardProvider({ children }: { children: ReactNode }) {
         deleteCohort,
         fetchArchivedSessions,
         addExistingSession,
+        openAddAgentPanel,
       }}
     >
       {children}

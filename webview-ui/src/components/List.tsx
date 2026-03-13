@@ -10,7 +10,7 @@ interface ListProps {
 }
 
 export function List({ list }: ListProps) {
-  const { state, newSession, renameCohort, deleteCohort, archivedSessions, fetchArchivedSessions, addExistingSession } = useBoardContext();
+  const { state, renameCohort, deleteCohort, archivedSessions, fetchArchivedSessions, addExistingSession, openAddAgentPanel } = useBoardContext();
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(list.title);
@@ -215,7 +215,7 @@ export function List({ list }: ListProps) {
                   <button
                     className="w-full text-left px-3 py-2 transition-colors hover:bg-white/5"
                     style={{ fontFamily: "monospace", fontSize: "10px", color: "#8891a8" }}
-                    onClick={() => { newSession(); setShowAddMenu(false); }}
+                    onClick={() => { openAddAgentPanel(list.id); setShowAddMenu(false); }}
                   >
                     New agent
                   </button>

@@ -37,4 +37,5 @@ export interface Session {
     updatedAt: Date;
     claudeLogFile?: string;
     waitingForPermission?: boolean;
+    skills?: string[];
 }

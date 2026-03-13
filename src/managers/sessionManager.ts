@@ -5,6 +5,17 @@ export class SessionManager {
     private sessions: Session[] = [];
     private _onDidChange = new vscode.EventEmitter<void>();
     readonly onDidChange = this._onDidChange.event;
+    private _pendingByName = new Map<string, { cohortId: string; skills: string[] }>();
+
+    registerPendingAgent(terminalName: string, cohortId: string, skills: string[]): void {
+        this._pendingByName.set(terminalName, { cohortId, skills });
+    }
+
+    consumePendingAgent(terminalName: string): { cohortId: string; skills: string[] } | undefined {
+        const config = this._pendingByName.get(terminalName);
+        if (config) { this._pendingByName.delete(terminalName); }
+        return config;
+    }
 
     add(id: string, name: string, cohortId: string, terminal?: vscode.Terminal, createdAt?: Date): Session {
         const session: Session = {
@@ -100,6 +111,14 @@ export class SessionManager {
         const session = this.getById(id);
         if (session) {
             session.waitingForPermission = value;
+            this._onDidChange.fire();
+        }
+    }
+
+    setSkills(id: string, skills: string[]): void {
+        const session = this.getById(id);
+        if (session) {
+            session.skills = skills;
             this._onDidChange.fire();
         }
     }
