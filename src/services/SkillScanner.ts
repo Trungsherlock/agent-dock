@@ -37,7 +37,8 @@ export class SkillScanner {
         let entries: string[];
         try {
             entries = fs.readdirSync(dir);
-        } catch {
+        } catch (e) {
+            console.warn(`[SkillScanner] Could not read skills directory: ${dir}`, e);
             return [];
         }
 

@@ -1,7 +1,7 @@
 import { SessionStatus, ToolCall } from '../models/session';
 import { type ArchivedSession } from '../constants';
 
-export interface SerializeSession {
+export interface SerializedSession {
     id: string;
     name: string;
     cohortId: string;
@@ -29,7 +29,7 @@ export interface SerializedCohort {
 }
 
 export type ExtensionMessage =
-    | { command: 'stateUpdate'; sessions: SerializeSession[], cohorts: SerializedCohort[] }
+    | { command: 'stateUpdate'; sessions: SerializedSession[], cohorts: SerializedCohort[] }
     | { command: 'archivedSessionsUpdate'; sessions: ArchivedSession[] };
 
 export type WebviewMessage = 
@@ -51,7 +51,7 @@ export type WebviewMessage =
     | { command: 'openFile'; filePath: string };
 
 
-export function serializeSession(s: import('../models/session').Session): SerializeSession {
+export function serializeSession(s: import('../models/session').Session): SerializedSession {
     return {
         id: s.id,
         name: s.name,

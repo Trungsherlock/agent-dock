@@ -32,7 +32,13 @@ export function installHooks(): void {
 
     const settingsPath = path.join(claudeDir, 'settings.json');
     let settings: Record<string, unknown> = {};
-    try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8')); } catch {}
+    try {
+        settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+    } catch (e: unknown) {
+        if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
+            console.warn('[HookInstaller] Could not read settings.json, will overwrite:', e);
+        }
+    }
 
     const hooks = (settings['hooks'] ?? {}) as Record<string, unknown[]>;
     let changed = false;

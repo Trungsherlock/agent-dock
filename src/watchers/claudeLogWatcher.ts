@@ -25,10 +25,12 @@ export class ClaudeLogWatcher {
             this.watcher = fs.watch(this.filePath, () => {
                 if (!this.disposed) { this.readNewLines(); }
             });
-        } catch {}
-        this.pollTimer = setInterval(() => {
-            if (!this.disposed) { this.readNewLines(); }
-        }, POLL_INTERVAL_MS);
+        } catch (e) {
+            console.warn(`[ClaudeLogWatcher] Could not watch file (falling back to poll): ${this.filePath}`, e);
+            this.pollTimer = setInterval(() => {
+                if (!this.disposed) { this.readNewLines(); }
+            }, POLL_INTERVAL_MS);
+        }
     }
 
     private readNewLines() {
@@ -51,7 +53,9 @@ export class ClaudeLogWatcher {
                 processTranscriptLine(line, this.sessionId, this.sessionManager, this.skipStatus);
             }
 
-        } catch {}
+        } catch (e) {
+            console.warn(`[ClaudeLogWatcher] Error reading log for session ${this.sessionId}:`, e);
+        }
     }
 
     dispose() {

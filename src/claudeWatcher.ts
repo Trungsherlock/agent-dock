@@ -47,7 +47,10 @@ function scanForNewFiles(
             files = fs.readdirSync(dir)
                 .filter(f => f.endsWith('.jsonl'))
                 .map(f => path.join(dir, f));
-        } catch { continue; }
+        } catch (e) {
+            console.warn(`[ClaudeWatcher] Could not read directory: ${dir}`, e);
+            continue;
+        }
 
         for (const file of files) {
             if (!knownFiles.has(file)) {
@@ -85,7 +88,9 @@ export function getAllClaudeLogFiles(workspacePath?: string): string[] {
             fs.readdirSync(dir)
                 .filter(f => f.endsWith('.jsonl'))
                 .forEach(f => files.push(path.join(dir, f)));
-        } catch {}
+        } catch (e) {
+            console.warn(`[ClaudeWatcher] Could not read directory: ${dir}`, e);
+        }
     }
     return files;
 }
@@ -101,23 +106,31 @@ export function watchForNewClaudeSessions(
     scanForNewFiles(dirs, knownFiles, () => {});
 
     const fsWatchers: fs.FSWatcher[] = [];
+    const unwatchedDirs: string[] = [];
     for (const dir of dirs) {
         try {
             const w = fs.watch(dir, () => {
                 scanForNewFiles(getClaudeProjectDirs(), knownFiles, onNewSession);
             });
             fsWatchers.push(w);
-        } catch {}
+        } catch (e) {
+            console.warn(`[ClaudeWatcher] Could not watch directory: ${dir}`, e);
+            unwatchedDirs.push(dir);
+        }
     }
 
-    const pollTimer = setInterval(() => {
-        scanForNewFiles(getClaudeProjectDirs(), knownFiles, onNewSession);
-    }, POLL_INTERVAL_MS);
+    // Only poll for directories that couldn't be watched
+    let pollTimer: NodeJS.Timeout | undefined;
+    if (unwatchedDirs.length > 0) {
+        pollTimer = setInterval(() => {
+            scanForNewFiles(unwatchedDirs, knownFiles, onNewSession);
+        }, POLL_INTERVAL_MS);
+    }
 
     context.subscriptions.push({
         dispose() {
             for (const w of fsWatchers) { w.close(); }
-            clearInterval(pollTimer);
+            if (pollTimer) { clearInterval(pollTimer); }
         },
     });
 }

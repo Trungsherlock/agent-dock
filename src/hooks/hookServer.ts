@@ -19,7 +19,7 @@ export class HookServer {
             let body = '';
             req.on('data', chunk => { body += chunk; });
             req.on('end', () => {
-                try { onEvent(JSON.parse(body)); } catch {}
+                try { onEvent(JSON.parse(body)); } catch (e) { console.warn('[HookServer] Failed to parse hook event body:', e); }
                 res.writeHead(200).end('ok');
             });
         });
