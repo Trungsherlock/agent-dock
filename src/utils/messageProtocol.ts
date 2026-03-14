@@ -70,7 +70,6 @@ export function serializeSession(s: import('../models/session').Session): Serial
         contextWindowUsed: s.contextWindowUsed,
         contextWindowMax: s.contextWindowMax,
         waitingForPermission: s.waitingForPermission,
-        skills: s.skills,
         updatedAt: s.updatedAt.toISOString(),
     };
 }

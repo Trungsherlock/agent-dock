@@ -26,7 +26,6 @@ export interface SerializedSession {
     contextWindowUsed: number;
     contextWindowMax: number;
     waitingForPermission?: boolean;
-    skills?: string[];
     updatedAt: string;
 }
 

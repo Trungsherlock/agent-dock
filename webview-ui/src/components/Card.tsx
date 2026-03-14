@@ -402,7 +402,7 @@ export function Card({ card, index, onClick }: CardProps) {
               )}
 
               {/* Skill tags */}
-              {card.skills && card.skills.length > 0 && (
+              {/* {card.skills && card.skills.length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                   {card.skills.map((skill) => (
                     <span
@@ -423,7 +423,7 @@ export function Card({ card, index, onClick }: CardProps) {
                     </span>
                   ))}
                 </div>
-              )}
+              )} */}
 
               {/* Tool calls (expanded) */}
               {expanded && recentTools.length > 0 && (

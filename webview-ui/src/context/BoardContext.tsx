@@ -126,7 +126,6 @@ const MOCK_STATE: BoardState = {
       status: "running",
       framework: "claude",
       note: "",
-      skills: ["payloadcms", "vscode-extension"],
       createdAt: new Date(Date.now() - 1000 * 60 * 9).toISOString(),
       updatedAt: new Date().toISOString(),
       currentTask: "Adding pagination to GET /users endpoint",
@@ -174,7 +173,6 @@ const MOCK_STATE: BoardState = {
       status: "running",
       framework: "claude",
       note: "",
-      skills: ["claude-api"],
       createdAt: new Date(Date.now() - 1000 * 60 * 9).toISOString(),
       updatedAt: new Date().toISOString(),
       currentTask: "Adding pagination to GET /users endpoint",
@@ -223,19 +221,6 @@ const MOCK_STATE: BoardState = {
       status: "thinking",
       framework: "claude",
       note: "",
-      skills: [
-        "commit",
-        "review-pr",
-        "simplify",
-        "review-pr",
-        "simplify",
-        "review-pr",
-        "simplify",
-        "review-pr",
-        "simplify",
-        "review-pr",
-        "simplify",
-      ],
       createdAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
       updatedAt: new Date().toISOString(),
       currentTask: "Planning token refresh strategy across 5 services",
@@ -345,6 +330,7 @@ type Action =
       toListId: string;
       toIndex: number;
     }
+  | { type: "REORDER_LISTS"; fromIndex: number; toIndex: number }
   | { type: "RENAME_CARD"; cardId: string; name: string }
   | { type: "SET_NOTE"; cardId: string; note: string }
   | { type: "SET_STATUS"; cardId: string; status: SessionStatus }
@@ -395,6 +381,13 @@ function reducer(state: BoardState, action: Action): BoardState {
         cards: { ...state.cards, [cardId]: updatedCard },
         lists: { ...state.lists, [fromListId]: fromList, [toListId]: toList },
       };
+    }
+
+    case "REORDER_LISTS": {
+      const newOrder = [...state.listOrder];
+      const [removed] = newOrder.splice(action.fromIndex, 1);
+      newOrder.splice(action.toIndex, 0, removed);
+      return { ...state, listOrder: newOrder };
     }
 
     case "RENAME_CARD":
@@ -515,6 +508,7 @@ interface BoardContextValue {
     toListId: string,
     toIndex: number,
   ) => void;
+  moveList: (fromIndex: number, toIndex: number) => void;
   renameCard: (cardId: string, name: string) => void;
   setNote: (cardId: string, note: string) => void;
   setStatus: (cardId: string, status: SessionStatus) => void;
@@ -606,6 +600,11 @@ export function BoardProvider({ children }: { children: ReactNode }) {
     vscode.postMessage({ command: "newSession", cohortId });
   };
 
+  const moveList = (fromIndex: number, toIndex: number) => {
+    dispatch({ type: "REORDER_LISTS", fromIndex, toIndex });
+    vscode.postMessage({ command: "reorderCohorts", fromIndex, toIndex });
+  };
+
   const createCohort = (label: string) => {
     const id = `cohort-${Date.now()}`;
     dispatch({ type: "CREATE_COHORT", id, label });
@@ -644,6 +643,7 @@ export function BoardProvider({ children }: { children: ReactNode }) {
         state,
         archivedSessions,
         moveCard,
+        moveList,
         renameCard,
         setNote,
         setStatus,

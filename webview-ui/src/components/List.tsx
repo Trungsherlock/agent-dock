@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Droppable } from "@hello-pangea/dnd";
+import { Droppable, type DraggableProvidedDraggableProps, type DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 import { useBoardContext } from "../context/useBoardContext";
 import type { BoardList } from "../context/BoardContext";
 import { Card } from "./Card";
@@ -7,13 +7,17 @@ import { CardModal } from "./CardModal";
 
 interface ListProps {
   list: BoardList;
+  innerRef?: (element?: HTMLElement | null) => void;
+  draggableProps?: DraggableProvidedDraggableProps;
+  dragHandleProps?: DraggableProvidedDragHandleProps | null;
 }
 
-export function List({ list }: ListProps) {
-  const { state, renameCohort, deleteCohort, archivedSessions, fetchArchivedSessions, addExistingSession, openAddAgentPanel, newSession } = useBoardContext();
+export function List({ list, innerRef, draggableProps, dragHandleProps }: ListProps) {
+  const { state, renameCohort, deleteCohort, archivedSessions, fetchArchivedSessions, addExistingSession, newSession } = useBoardContext();
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(list.title);
+  const [collapsed, setCollapsed] = useState(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -56,22 +60,36 @@ export function List({ list }: ListProps) {
   return (
     <>
       <div
+        ref={innerRef}
+        {...draggableProps}
         className="flex flex-col w-full"
         style={{
           backgroundColor: "#12161f",
           border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: "14px",
+          ...draggableProps?.style,
         }}
       >
         {/* Header */}
         <div
           className="flex items-center gap-2 px-4 py-3"
           style={{
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            borderBottom: collapsed ? "none" : "1px solid rgba(255,255,255,0.06)",
             background: "rgba(255,255,255,0.02)",
-            borderRadius: "14px 14px 0 0",
+            borderRadius: collapsed ? "14px" : "14px 14px 0 0",
           }}
         >
+          {/* Drag handle */}
+          <div
+            {...(dragHandleProps ?? {})}
+            style={{ display: "flex", alignItems: "center", color: "#4e5a72", cursor: "grab", flexShrink: 0 }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
+              <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+              <circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
+            </svg>
+          </div>
           {/* Color dot */}
           {/* <span
             style={{
@@ -177,10 +195,34 @@ export function List({ list }: ListProps) {
               </svg>
             </button>
           )}
+
+          {/* Collapse toggle */}
+          <button
+            onClick={() => setCollapsed((v) => !v)}
+            style={{
+              lineHeight: 1,
+              color: "#6b7a96",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "2px 4px",
+              borderRadius: "4px",
+              transition: "all 0.15s ease",
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#a0aec8"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7a96"; }}
+            title={collapsed ? "Expand" : "Collapse"}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"
+              style={{ transform: collapsed ? "rotate(-90deg)" : "none", transition: "transform 0.2s ease" }}>
+              <path d="M480-360 280-560h400L480-360Z"/>
+            </svg>
+          </button>
         </div>
 
         {/* Cards */}
-        <Droppable droppableId={list.id}>
+        {!collapsed && <Droppable droppableId={list.id} key={list.id}>
           {(provided, snapshot) => (
             <div
               ref={provided.innerRef}
@@ -219,9 +261,10 @@ export function List({ list }: ListProps) {
               {provided.placeholder}
             </div>
           )}
-        </Droppable>
+        </Droppable>}
 
         {/* Footer */}
+        {!collapsed &&
         <div
           className="relative flex items-center px-4 py-2.5"
           style={{
@@ -232,7 +275,7 @@ export function List({ list }: ListProps) {
           ref={menuRef}
         >
           <button
-            onClick={() => setShowAddMenu((v) => !v)}
+            onClick={() => { setShowAddMenu((v) => !v); setShowArchived(false); }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -268,13 +311,15 @@ export function List({ list }: ListProps) {
 
           {showAddMenu && (
             <div
-              className="absolute bottom-full left-0 mb-2 z-10"
+              className="absolute top-full left-0 mt-2 z-10"
               style={{
                 backgroundColor: "#1a2035",
                 border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: "10px",
                 overflow: "hidden",
                 minWidth: "170px",
+                maxHeight: "160px",
+                overflowY: "auto",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
               }}
             >
@@ -325,32 +370,6 @@ export function List({ list }: ListProps) {
                   >
                     New agent
                   </button>
-                  <div
-                    style={{
-                      height: "1px",
-                      background: "rgba(255,255,255,0.06)",
-                      margin: "0 10px",
-                    }}
-                  />
-                  <button
-                    className="w-full text-left transition-colors hover:bg-white/5"
-                    style={{
-                      fontFamily: "monospace",
-                      fontSize: "11px",
-                      color: "#9aa8c4",
-                      padding: "9px 14px",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      display: "block",
-                    }}
-                    onClick={() => {
-                      openAddAgentPanel(list.id);
-                      setShowAddMenu(false);
-                    }}
-                  >
-                    New agent with skills
-                  </button>
                 </>
               ) : archivedSessions.length === 0 ? (
                 <div
@@ -394,7 +413,7 @@ export function List({ list }: ListProps) {
               )}
             </div>
           )}
-        </div>
+        </div>}
       </div>
 
       {openCard && (
