@@ -48,7 +48,7 @@ export type ExtensionMessage =
 
 export type WebviewMessage =
     | { command: 'ready' }
-    | { command: 'newSession' }
+    | { command: 'newSession'; cohortId: string }
     | { command: 'focusSession'; sessionId: string }
     | { command: 'endSession'; sessionId: string }
     | { command: 'renameSession'; sessionId: string; newName: string }

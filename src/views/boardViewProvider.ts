@@ -13,6 +13,8 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'agentdock.boardView';
     private _view?: vscode.WebviewView;
     private _panelWebviews = new Set<vscode.Webview>();
+    private _nextAgentIdx = 1;
+    private _renamingSessionId: string | undefined;
 
     constructor(
         private readonly _context: vscode.ExtensionContext,
@@ -52,13 +54,24 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 this._view?.webview.postMessage({ command: 'sessionFocused', sessionId: session.id });
             }
         });
+
+        // Poll for terminal renames — VSCode has no onDidRenameTerminal event
+        const pollInterval = setInterval(() => {
+            if (this._renamingSessionId) { return; }
+            for (const session of this._sessionManager.getAll()) {
+                if (session.terminal && session.terminal.name !== session.name) {
+                    this._sessionManager.rename(session.id, session.terminal.name);
+                }
+            }
+        }, 500);
+        this._context.subscriptions.push({ dispose: () => clearInterval(pollInterval) });
     }
 
     public postStateUpdate(): void {
         this._postStateUpdate();
     }
 
-    private _handleMessage(message: WebviewMessage): void {
+    private async _handleMessage(message: WebviewMessage): Promise<void> {
         switch (message.command) {
             case 'ready': {
                 this._postStateUpdate();
@@ -88,6 +101,16 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
             }
             case 'renameSession': {
                 this._sessionManager.rename(message.sessionId, message.newName);
+                const s = this._sessionManager.getById(message.sessionId);
+                if (s?.terminal) {
+                    this._renamingSessionId = message.sessionId;
+                    s.terminal.show(true);
+                    await vscode.commands.executeCommand(
+                        'workbench.action.terminal.renameWithArg',
+                        { name: message.newName }
+                    );
+                    this._renamingSessionId = undefined;
+                }
                 break;
             }
             case 'moveSession': {
@@ -115,7 +138,12 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 break;
             }
             case 'newSession': {
-                vscode.commands.executeCommand('agentdock.newSession');
+                const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+                const name = `Claude Code #${this._nextAgentIdx++}`;
+                const terminal = vscode.window.createTerminal({ name, cwd });
+                terminal.show();
+                terminal.sendText('claude');
+                this._sessionManager.registerPendingAgent(name, message.cohortId, []);
                 break;
             }
             case 'createCohort': {

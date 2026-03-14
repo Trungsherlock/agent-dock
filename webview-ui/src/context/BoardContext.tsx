@@ -521,7 +521,7 @@ interface BoardContextValue {
   endSession: (cardId: string) => void;
   focusSession: (cardId: string) => void;
   resumeSession: (cardId: string) => void;
-  newSession: () => void;
+  newSession: (cohortId: string) => void;
   createCohort: (label: string) => void;
   renameCohort: (id: string, label: string) => void;
   deleteCohort: (id: string) => void;
@@ -602,8 +602,8 @@ export function BoardProvider({ children }: { children: ReactNode }) {
     vscode.postMessage({ command: "resumeSession", sessionId: cardId });
   };
 
-  const newSession = () => {
-    vscode.postMessage({ command: "newSession" });
+  const newSession = (cohortId: string) => {
+    vscode.postMessage({ command: "newSession", cohortId });
   };
 
   const createCohort = (label: string) => {

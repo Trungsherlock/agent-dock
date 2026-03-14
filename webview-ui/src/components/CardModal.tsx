@@ -30,8 +30,9 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const commitName = () => {
-    if (name.trim() && name.trim() !== card.name) renameCard(card.id, name.trim());
+  const confirmRename = () => {
+    const trimmed = name.trim();
+    if (trimmed && trimmed !== card.name) renameCard(card.id, trimmed);
     else setName(card.name);
   };
 
@@ -142,35 +143,56 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
           }}
         >
           {/* Name input */}
-          <input
-            ref={nameRef}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={commitName}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") nameRef.current?.blur();
-            }}
-            style={{
-              background: "#161b2e",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "8px",
-              padding: "8px 12px",
-              color: "#dde1f0",
-              fontFamily: "monospace",
-              fontSize: "13px",
-              fontWeight: 600,
-              outline: "none",
-              width: "100%",
-              boxSizing: "border-box",
-              transition: "border-color 0.15s",
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = "rgba(129,140,248,0.5)";
-            }}
-            onBlurCapture={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-            }}
-          />
+          <div style={{ display: "flex", gap: "6px" }}>
+            <input
+              ref={nameRef}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") confirmRename();
+                if (e.key === "Escape") setName(card.name);
+              }}
+              style={{
+                flex: 1,
+                background: "#161b2e",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "8px",
+                padding: "8px 12px",
+                color: "#dde1f0",
+                fontFamily: "monospace",
+                fontSize: "13px",
+                fontWeight: 600,
+                outline: "none",
+                boxSizing: "border-box",
+                transition: "border-color 0.15s",
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(129,140,248,0.5)"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+            />
+            {name.trim() !== card.name && name.trim() !== "" && (
+              <button
+                onClick={confirmRename}
+                title="Confirm rename"
+                style={{
+                  flexShrink: 0,
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  background: "rgba(0,212,170,0.12)",
+                  border: "1px solid rgba(0,212,170,0.3)",
+                  color: "#00d4aa",
+                  cursor: "pointer",
+                  fontFamily: "monospace",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(0,212,170,0.22)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(0,212,170,0.12)"; }}
+              >
+                ✓
+              </button>
+            )}
+          </div>
 
           {/* Status toggle */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

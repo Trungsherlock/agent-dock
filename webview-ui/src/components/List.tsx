@@ -10,7 +10,7 @@ interface ListProps {
 }
 
 export function List({ list }: ListProps) {
-  const { state, renameCohort, deleteCohort, archivedSessions, fetchArchivedSessions, addExistingSession, openAddAgentPanel } = useBoardContext();
+  const { state, renameCohort, deleteCohort, archivedSessions, fetchArchivedSessions, addExistingSession, openAddAgentPanel, newSession } = useBoardContext();
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(list.title);
@@ -166,7 +166,13 @@ export function List({ list }: ListProps) {
               }}
               title="Delete cohort"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#FFFFFF">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="20px"
+                viewBox="0 -960 960 960"
+                width="20px"
+                fill="#FFFFFF"
+              >
                 <path d="m291-240-51-51 189-189-189-189 51-51 189 189 189-189 51 51-189 189 189 189-51 51-189-189-189 189Z" />
               </svg>
             </button>
@@ -313,11 +319,37 @@ export function List({ list }: ListProps) {
                       display: "block",
                     }}
                     onClick={() => {
-                      openAddAgentPanel(list.id);
+                      newSession(list.id);
                       setShowAddMenu(false);
                     }}
                   >
                     New agent
+                  </button>
+                  <div
+                    style={{
+                      height: "1px",
+                      background: "rgba(255,255,255,0.06)",
+                      margin: "0 10px",
+                    }}
+                  />
+                  <button
+                    className="w-full text-left transition-colors hover:bg-white/5"
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "11px",
+                      color: "#9aa8c4",
+                      padding: "9px 14px",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "block",
+                    }}
+                    onClick={() => {
+                      openAddAgentPanel(list.id);
+                      setShowAddMenu(false);
+                    }}
+                  >
+                    New agent with skills
                   </button>
                 </>
               ) : archivedSessions.length === 0 ? (
@@ -400,17 +432,39 @@ export function List({ list }: ListProps) {
               gap: "16px",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 700, color: "#dde1f0" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+            >
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "#dde1f0",
+                }}
+              >
                 Delete cohort?
               </span>
-              <span style={{ fontFamily: "monospace", fontSize: "11px", color: "#6b7a96", lineHeight: 1.5 }}>
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "11px",
+                  color: "#6b7a96",
+                  lineHeight: 1.5,
+                }}
+              >
                 {cards.length > 0
                   ? `"${list.title}" will be deleted. ${cards.length} agent(s) will move to Uncategorized.`
                   : `"${list.title}" will be permanently deleted.`}
               </span>
             </div>
-            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                justifyContent: "flex-end",
+              }}
+            >
               <button
                 onClick={() => setShowDeletePopup(false)}
                 style={{
@@ -424,13 +478,20 @@ export function List({ list }: ListProps) {
                   cursor: "pointer",
                   transition: "all 0.15s ease",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                }}
               >
                 Cancel
               </button>
               <button
-                onClick={() => { deleteCohort(list.id); setShowDeletePopup(false); }}
+                onClick={() => {
+                  deleteCohort(list.id);
+                  setShowDeletePopup(false);
+                }}
                 style={{
                   fontFamily: "monospace",
                   fontSize: "11px",
@@ -443,8 +504,12 @@ export function List({ list }: ListProps) {
                   cursor: "pointer",
                   transition: "all 0.15s ease",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,77,106,0.25)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,77,106,0.15)"; }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,77,106,0.25)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,77,106,0.15)";
+                }}
               >
                 Delete
               </button>
