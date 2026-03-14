@@ -17,7 +17,7 @@ export class SessionManager {
         return config;
     }
 
-    add(id: string, name: string, cohortId: string, terminal?: vscode.Terminal, createdAt?: Date): Session {
+    add(id: string, name: string, cohortId: string, terminal?: vscode.Terminal, createdAt?: Date, framework = 'claude', contextWindowMax = 200_000): Session {
         const session: Session = {
             id,
             name,
@@ -26,14 +26,14 @@ export class SessionManager {
             createdAt: createdAt ?? new Date(),
             terminal,
             note: '',
-            framework: 'claude',
+            framework,
             filesTouched: [],
             toolCalls: [],
             tokensInput: 0,
             tokensOutput: 0,
             costUsd: 0,
             contextWindowUsed: 0,
-            contextWindowMax: 200000,
+            contextWindowMax,
             updatedAt: new Date(),
         };
         this.sessions.push(session);

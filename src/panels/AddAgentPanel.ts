@@ -35,7 +35,7 @@ export class AddAgentPanel {
 
         const panel = vscode.window.createWebviewPanel(
             'agentdock.addAgent',
-            `Add Agent — ${projectName}`,
+            `Add Agent`,
             vscode.ViewColumn.Beside,
             {
                 enableScripts: true,

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 export type SessionStatus = 'running' | 'thinking' | 'idle' | 'error';
 
-export type AgentFramework = 'claude' | 'custom';
+export type AgentFramework = string;
 
 export interface ToolCall {
     id: string;

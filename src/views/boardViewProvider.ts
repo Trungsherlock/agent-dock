@@ -5,6 +5,7 @@ import { SessionManager } from '../managers/sessionManager';
 import { CohortManager } from '../managers/cohortManager';
 import { serializeSession, WebviewMessage, ExtensionMessage } from '../utils/messageProtocol';
 import { MessageHandler } from './messageHandler';
+import { AgentRegistry } from '../agents/AgentRegistry';
 
 export class BoardViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'agentdock.boardView';
@@ -16,6 +17,7 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
         private readonly _context: vscode.ExtensionContext,
         private readonly _sessionManager: SessionManager,
         private readonly _cohortManager: CohortManager,
+        registry: AgentRegistry,
     ) {
         this._messageHandler = new MessageHandler(
             _context,
@@ -23,6 +25,7 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
             _cohortManager,
             (msg) => this._view?.webview.postMessage(msg),
             () => this._postStateUpdate(),
+            registry,
         );
     }
 
@@ -59,7 +62,6 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
             }
         });
 
-        // Poll for terminal renames — VSCode has no onDidRenameTerminal event
         const pollInterval = setInterval(() => {
             if (this._messageHandler.renamingSessionId) { return; }
             for (const session of this._sessionManager.getAll()) {

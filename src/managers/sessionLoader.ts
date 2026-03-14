@@ -6,7 +6,6 @@ import { CohortManager, type Cohort } from './cohortManager';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
 import { getAllClaudeLogFiles, isConversationFile } from '../claudeWatcher';
 import { SESSIONS_KEY, COHORTS_KEY, NAMES_KEY, SKILLS_KEY, type PersistedSession, type ArchivedSession } from '../constants';
-import type { SessionStatus } from '../models/session';
 
 export function loadSessions(
     context: vscode.ExtensionContext,
@@ -19,20 +18,10 @@ export function loadSessions(
             const session = sessionManager.add(id, s.name, s.cohortId);
             if (s.note) { sessionManager.setNote(session.id, s.note); }
             if (s.skills?.length) { sessionManager.setSkills(session.id, s.skills); }
-            const autoStatuses = ['running', 'thinking'];
-            if (s.status && !autoStatuses.includes(s.status)) {
-                sessionManager.setStatus(session.id, s.status as SessionStatus);
-            }
+            sessionManager.setStatus(session.id, 'idle');
             sessionManager.setClaudeLogFile(session.id, s.claudeLogFile);
             const existing = vscode.window.terminals.find(t => t.name === s.name);
-            const terminal = existing ?? vscode.window.createTerminal({
-                name: s.name,
-                cwd: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
-            });
-            if (!existing) {
-                terminal.sendText(`claude --resume ${session.id}`);
-            }
-            sessionManager.setTerminal(session.id, terminal);
+            if (existing) { sessionManager.setTerminal(session.id, existing); }
             const watcher = new ClaudeLogWatcher(session.id, s.claudeLogFile, sessionManager, true);
             context.subscriptions.push({ dispose: () => watcher.dispose() });
         } else {

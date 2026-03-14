@@ -65,9 +65,9 @@ function encodeProjectPath(absolutePath: string): string {
     if (process.platform === 'win32') {
         return absolutePath
             .replace(/^([A-Za-z]):/, (_, drive: string) => drive.toLowerCase() + '-')
-            .replace(/[\\/]/g, '-');
+            .replace(/[^a-zA-Z0-9-]/g, '-');
     }
-    return absolutePath.replace(/\//g, '-');
+    return absolutePath.replace(/[^a-zA-Z0-9-]/g, '-');
 }
 
 export function getAllClaudeLogFiles(workspacePath?: string): string[] {
@@ -119,7 +119,6 @@ export function watchForNewClaudeSessions(
         }
     }
 
-    // Only poll for directories that couldn't be watched
     let pollTimer: NodeJS.Timeout | undefined;
     if (unwatchedDirs.length > 0) {
         pollTimer = setInterval(() => {

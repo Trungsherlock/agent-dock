@@ -7,6 +7,7 @@ import { getArchivedSessions } from '../managers/sessionLoader';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
 import { NAMES_KEY, SKILLS_KEY } from '../constants';
 import { AddAgentPanel } from '../panels/AddAgentPanel';
+import { AgentRegistry } from '../agents/AgentRegistry';
 
 export class MessageHandler {
     private _nextAgentIdx = 1;
@@ -18,6 +19,7 @@ export class MessageHandler {
         private readonly _cohortManager: CohortManager,
         private readonly _postMessage: (msg: unknown) => void,
         private readonly _triggerStateUpdate: () => void,
+        private readonly _registry: AgentRegistry,
     ) {}
 
     async handle(message: WebviewMessage): Promise<void> {
@@ -77,21 +79,25 @@ export class MessageHandler {
             case 'resumeSession': {
                 const s = this._sessionManager.getById(message.sessionId);
                 if (!s) { break; }
+                const driver = this._registry.getById(s.framework) ?? this._registry.getDefault();
+                if (!driver) { break; }
                 const terminal = vscode.window.createTerminal({
                     name: s.name,
                     cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
                 });
                 terminal.show();
-                terminal.sendText(`claude --resume ${message.sessionId}`);
+                terminal.sendText(driver.getResumeCommand(message.sessionId));
                 this._sessionManager.setTerminal(message.sessionId, terminal);
                 break;
             }
             case 'newSession': {
+                const driver = this._registry.getDefault();
+                if (!driver) { break; }
                 const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-                const name = `Claude Code #${this._nextAgentIdx++}`;
+                const name = `${driver.displayName} #${this._nextAgentIdx++}`;
                 const terminal = vscode.window.createTerminal({ name, cwd });
                 terminal.show();
-                terminal.sendText('claude');
+                terminal.sendText(driver.getLaunchCommand());
                 this._sessionManager.registerPendingAgent(name, message.cohortId, []);
                 break;
             }
@@ -121,6 +127,8 @@ export class MessageHandler {
                 break;
             }
             case 'openAddAgentPanel': {
+                const driver = this._registry.getDefault();
+                if (!driver) { break; }
                 const projectRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
                 AddAgentPanel.createOrShow(
                     this._context,
@@ -132,7 +140,7 @@ export class MessageHandler {
                             cwd: projectRoot,
                         });
                         terminal.show();
-                        terminal.sendText('claude');
+                        terminal.sendText(driver.getLaunchCommand());
                         this._sessionManager.registerPendingAgent(
                             config.name,
                             config.cohortId ?? 'uncategorized',
@@ -156,6 +164,8 @@ export class MessageHandler {
                 break;
             }
             case 'addExistingSession': {
+                const driver = this._registry.getDefault();
+                if (!driver) { break; }
                 const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
                 const nameMap = this._context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
                 const skillsMap = this._context.workspaceState.get<Record<string, string[]>>(SKILLS_KEY, {});
@@ -170,7 +180,7 @@ export class MessageHandler {
                     name: found.name,
                     cwd: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
                 });
-                terminal.sendText(`claude --resume ${found.id}`);
+                terminal.sendText(driver.getResumeCommand(found.id));
                 terminal.show();
                 this._sessionManager.setTerminal(found.id, terminal);
                 const watcher = new ClaudeLogWatcher(session.id, found.claudeLogFile, this._sessionManager, true);
