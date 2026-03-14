@@ -24,7 +24,10 @@ except Exception:
 export function installHooks(): void {
     const claudeDir = path.join(os.homedir(), '.claude');
     const scriptPath = path.join(claudeDir, HOOK_SCRIPT_NAME);
-    const hookCommand = `python3 "${scriptPath}"`;
+    // On Windows the 'python3' alias may not exist — use 'python'.
+    // On macOS/Linux, 'python3' is the correct name.
+    const pythonBin = process.platform === 'win32' ? 'python' : 'python3';
+    const hookCommand = `${pythonBin} "${scriptPath}"`;
 
     fs.mkdirSync(claudeDir, { recursive: true });
 
