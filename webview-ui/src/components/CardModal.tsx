@@ -224,13 +224,13 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
                 fontWeight: 600,
                 padding: "3px 10px",
                 borderRadius: "99px",
-                background: bg,
-                color,
-                border: `1px solid ${color}35`,
+                background: card.hasTerminal ? bg : "rgba(107,122,150,0.08)",
+                color: card.hasTerminal ? color : "#6b7a96",
+                border: `1px solid ${card.hasTerminal ? color : "#6b7a96"}35`,
                 letterSpacing: "0.3px",
               }}
             >
-              {label}
+              {card.hasTerminal ? label : "Offline"}
             </span>
           </div>
 

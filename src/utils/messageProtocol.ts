@@ -20,6 +20,7 @@ export interface SerializedSession {
     contextWindowMax: number;
     waitingForPermission?: boolean;
     skills?: string[];
+    hasTerminal: boolean;
     updatedAt: string;
 }
 
@@ -71,6 +72,7 @@ export function serializeSession(s: import('../models/session').Session): Serial
         contextWindowMax: s.contextWindowMax,
         waitingForPermission: s.waitingForPermission,
         skills: s.skills,
+        hasTerminal: !!s.terminal,
         updatedAt: s.updatedAt.toISOString(),
     };
 }

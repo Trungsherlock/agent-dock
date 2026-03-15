@@ -68,7 +68,7 @@ function extractPathFromInput(input: string): string {
 }
 
 export function Card({ card, index, onClick }: CardProps) {
-  const { focusSession } = useBoardContext();
+  const { focusSession, resumeSession } = useBoardContext();
   const [, setTick] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -252,39 +252,56 @@ export function Card({ card, index, onClick }: CardProps) {
                   alignSelf: "flex-start",
                   padding: "3px 8px 3px 6px",
                   borderRadius: "99px",
-                  background: statusStyle.bg,
-                  border: `1px solid ${statusStyle.color}30`,
+                  background: card.hasTerminal ? statusStyle.bg : "rgba(107,122,150,0.08)",
+                  border: `1px solid ${card.hasTerminal ? statusStyle.color : "#6b7a96"}30`,
                 }}
               >
-                <span
-                  className={isActive ? `${dotClass} status-dot-active` : dotClass}
-                  style={{
-                    width: "6px",
-                    height: "6px",
-                    borderRadius: "50%",
-                    backgroundColor: statusStyle.color,
-                    boxShadow: `0 0 5px ${statusStyle.glow}`,
-                    flexShrink: 0,
-                    display: "inline-block",
-                  }}
-                />
-                <span
-                  style={{
-                    color: statusStyle.color,
-                    fontSize: "10px",
-                    fontWeight: 600,
-                  }}
-                >
-                  {statusStyle.label}
-                </span>
-                {isActive && (
-                  <span style={{ color: "#6b7a96", fontSize: "10px" }}>
-                    {runStartedAt.current > 0
-                      ? formatDuration(
-                          new Date(runStartedAt.current).toISOString(),
-                        )
-                      : formatDuration(card.createdAt)}
-                  </span>
+                {card.hasTerminal ? (
+                  <>
+                    <span
+                      className={isActive ? `${dotClass} status-dot-active` : dotClass}
+                      style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        backgroundColor: statusStyle.color,
+                        boxShadow: `0 0 5px ${statusStyle.glow}`,
+                        flexShrink: 0,
+                        display: "inline-block",
+                      }}
+                    />
+                    <span style={{ color: statusStyle.color, fontSize: "10px", fontWeight: 600 }}>
+                      {statusStyle.label}
+                    </span>
+                    {isActive && (
+                      <span style={{ color: "#6b7a96", fontSize: "10px" }}>
+                        {runStartedAt.current > 0
+                          ? formatDuration(new Date(runStartedAt.current).toISOString())
+                          : formatDuration(card.createdAt)}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span style={{ color: "#6b7a96", fontSize: "10px", fontWeight: 600 }}>
+                      offline
+                    </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); resumeSession(card.id); }}
+                      style={{
+                        background: "rgba(129,140,248,0.12)",
+                        border: "1px solid rgba(129,140,248,0.3)",
+                        borderRadius: "99px",
+                        color: "#818cf8",
+                        fontSize: "10px",
+                        fontWeight: 600,
+                        padding: "1px 7px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Resume
+                    </button>
+                  </>
                 )}
               </div>
 

@@ -77,6 +77,7 @@ const MOCK_STATE: BoardState = {
       costUsd: 0,
       contextWindowUsed: 0,
       contextWindowMax: 200000,
+      hasTerminal: false,
     },
     // status: error — tool with error status, low context (green bar ~5%)
     "s-error": {
@@ -117,6 +118,7 @@ const MOCK_STATE: BoardState = {
       costUsd: 0.029,
       contextWindowUsed: 9400,
       contextWindowMax: 200000,
+      hasTerminal: true,
     },
     // status: running — active tool in progress, medium context (green bar ~35%)
     "s-running": {
@@ -165,6 +167,7 @@ const MOCK_STATE: BoardState = {
       costUsd: 0.21,
       contextWindowUsed: 70000,
       contextWindowMax: 200000,
+      hasTerminal: true,
     },
     "s-running-2": {
       id: "s-running-2",
@@ -212,6 +215,7 @@ const MOCK_STATE: BoardState = {
       costUsd: 0.21,
       contextWindowUsed: 70000,
       contextWindowMax: 200000,
+      hasTerminal: true,
     },
     // status: thinking — high context (yellow bar ~68%), many files
     "s-thinking": {
@@ -264,6 +268,7 @@ const MOCK_STATE: BoardState = {
       costUsd: 0.48,
       contextWindowUsed: 136000,
       contextWindowMax: 200000,
+      hasTerminal: true,
     },
     // status: idle — very high context (red bar ~90%), all tools done, with note
     "s-done": {
@@ -315,6 +320,7 @@ const MOCK_STATE: BoardState = {
       costUsd: 0.87,
       contextWindowUsed: 178000,
       contextWindowMax: 200000,
+      hasTerminal: true,
     },
   },
 };
