@@ -69,7 +69,6 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 if (session.terminal.name === session.name) { continue; }
                 // Skip if the terminal is still at its original creation name — not user-renamed.
                 // After VS Code reload, terminal.name always returns the creation name.
-                if (session.terminal.name === session.terminalCreationName) { continue; }
                 this._sessionManager.rename(session.id, session.terminal.name);
             }
         }, 500);

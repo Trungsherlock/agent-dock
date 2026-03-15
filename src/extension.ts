@@ -31,7 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.onDidCloseTerminal((closed) => {
             const session = sessionManager.getAll().find(s =>
                 s.terminal === closed ||
-                (s.terminalCreationName && s.terminalCreationName === closed.name)
+                (s.name && s.name === closed.name)
             );
             if (session) { sessionManager.remove(session.id); }
         })

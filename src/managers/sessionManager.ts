@@ -130,11 +130,6 @@ export class SessionManager {
         }
     }
 
-    setTerminalCreationName(id: string, name: string): void {
-        const session = this.getById(id);
-        if (session) { session.terminalCreationName = name; this._onDidChange.fire(); }
-    }
-
     setNote(id: string, note: string): void {
         const session = this.getById(id);
         if (session) {

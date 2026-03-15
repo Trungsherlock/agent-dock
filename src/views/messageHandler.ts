@@ -32,8 +32,8 @@ export class MessageHandler {
                 if (!s) { break; }
                 if (s.terminal) {
                     s.terminal.show();
-                } else if (s.terminalCreationName) {
-                    const found = vscode.window.terminals.find(t => t.name === s.terminalCreationName);
+                } else if (s.name) {
+                    const found = vscode.window.terminals.find(t => t.name === s.name);
                     if (found) { found.show(); this._sessionManager.setTerminal(s.id, found); }
                 }
                 break;
@@ -42,7 +42,7 @@ export class MessageHandler {
                 const s = this._sessionManager.getById(message.sessionId);
                 if (s) {
                     const terminal = s.terminal
-                        ?? vscode.window.terminals.find(t => t.name === s.terminalCreationName);
+                        ?? vscode.window.terminals.find(t => t.name === s.name);
                     terminal?.dispose();
                     this._sessionManager.remove(message.sessionId);
                 }
@@ -82,15 +82,13 @@ export class MessageHandler {
                 if (!s) { break; }
                 const driver = this._registry.getById(s.framework) ?? this._registry.getDefault();
                 if (!driver) { break; }
-                const terminalCreationName = `${s.name} #${crypto.randomUUID().slice(0, 8)}`;
                 const terminal = vscode.window.createTerminal({
-                    name: terminalCreationName,
+                    name: s.name,
                     cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
                 });
                 terminal.show();
                 terminal.sendText(driver.getResumeCommand(message.sessionId));
                 this._sessionManager.setTerminal(message.sessionId, terminal);
-                this._sessionManager.setTerminalCreationName(message.sessionId, terminalCreationName);
                 break;
             }
             case 'newSession': {
@@ -168,15 +166,13 @@ export class MessageHandler {
                 this._sessionManager.setClaudeLogFile(session.id, found.claudeLogFile);
                 this._sessionManager.setStatus(session.id, 'idle');
                 if (found.skills?.length) { this._sessionManager.setSkills(session.id, found.skills); }
-                const terminalCreationName = `${found.name} #${crypto.randomUUID().slice(0, 8)}`;
                 const terminal = vscode.window.createTerminal({
-                    name: terminalCreationName,
+                    name: found.name,
                     cwd: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
                 });
                 terminal.sendText(driver.getResumeCommand(found.id));
                 terminal.show();
                 this._sessionManager.setTerminal(found.id, terminal);
-                this._sessionManager.setTerminalCreationName(found.id, terminalCreationName);
                 const watcher = new ClaudeLogWatcher(session.id, found.claudeLogFile, this._sessionManager, true);
                 this._context.subscriptions.push({ dispose: () => watcher.dispose() });
                 break;

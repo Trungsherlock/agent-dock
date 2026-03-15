@@ -44,7 +44,6 @@ export function registerCommands(
             // Rename the terminal to include the session ID so the terminal tab
             // and the board card show the same name.
             if (resolvedTerminal) {
-                sessionManager.setTerminalCreationName(session.id, resolvedTerminal.name);
                 resolvedTerminal.show(true);
                 vscode.commands.executeCommand(
                     'workbench.action.terminal.renameWithArg',
