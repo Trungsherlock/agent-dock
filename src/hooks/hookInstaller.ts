@@ -36,10 +36,13 @@ export function installHooks(): void {
     const settingsPath = path.join(claudeDir, 'settings.json');
     let settings: Record<string, unknown> = {};
     try {
-        settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+        const raw = fs.readFileSync(settingsPath, 'utf-8');
+        settings = JSON.parse(raw);
     } catch (e: unknown) {
-        if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
-            console.warn('[HookInstaller] Could not read settings.json, will overwrite:', e);
+        const code = (e as NodeJS.ErrnoException).code;
+        if (code !== 'ENOENT') {
+            console.warn('[HookInstaller] settings.json is unreadable or malformed — skipping hook installation:', e);
+            return;
         }
     }
 
@@ -57,6 +60,8 @@ export function installHooks(): void {
 
     if (changed) {
         settings['hooks'] = hooks;
-        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+        const tmpPath = settingsPath + '.tmp';
+        fs.writeFileSync(tmpPath, JSON.stringify(settings, null, 2));
+        fs.renameSync(tmpPath, settingsPath);
     }
 }

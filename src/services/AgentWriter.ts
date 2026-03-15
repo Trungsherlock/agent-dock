@@ -19,23 +19,30 @@ export class AgentWriter {
         const slug = this._slugify(config.name);
         const agentsDir = path.join(config.projectRoot, '.claude', 'agents');
 
-        fs.mkdirSync(agentsDir, { recursive: true });
+        try {
+            fs.mkdirSync(agentsDir, { recursive: true });
+            const filePath = path.join(agentsDir, `${slug}.md`);
+            fs.writeFileSync(filePath, this._buildContent(config), 'utf-8');
+            return filePath;
+        } catch (e) {
+            throw new Error(`Failed to write agent file: ${(e as Error).message}`);
+        }
+    }
 
-        const filePath = path.join(agentsDir, `${slug}.md`);
-        fs.writeFileSync(filePath, this._buildContent(config), 'utf-8');
-        return filePath;
+    private _yamlStr(value: string): string {
+        return '"' + value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n') + '"';
     }
 
     private _buildContent(config: AgentConfig): string {
         const lines: string[] = ['---'];
-        lines.push(`name: ${config.name}`);
-        lines.push(`description: ${config.description}`);
-        if (config.model) { lines.push(`model: ${config.model}`); }
+        lines.push(`name: ${this._yamlStr(config.name)}`);
+        lines.push(`description: ${this._yamlStr(config.description)}`);
+        if (config.model) { lines.push(`model: ${this._yamlStr(config.model)}`); }
         if (config.tools.length > 0) { lines.push(`tools: ${config.tools.join(', ')}`); }
         if (config.skills.length > 0) {
             lines.push('skills:');
             for (const skill of config.skills) {
-                lines.push(`  - ${skill}`);
+                lines.push(`  - ${this._yamlStr(skill)}`);
             }
         }
         lines.push('---');

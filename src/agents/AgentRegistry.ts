@@ -11,7 +11,6 @@ export class AgentRegistry {
         return this._drivers.get(id);
     }
 
-    /** Returns the first driver whose detectTerminal() matches the given name */
     detectTerminal(terminalName: string): AgentDriver | undefined {
         for (const driver of this._drivers.values()) {
             if (driver.detectTerminal(terminalName)) { return driver; }

@@ -1,5 +1,7 @@
 import * as http from 'http';
 
+const MAX_BODY_BYTES = 1024 * 1024; // 1 MB
+
 export interface HookEvent {
     hook_event_name: string;
     session_id: string;
@@ -17,7 +19,16 @@ export class HookServer {
                 return;
             }
             let body = '';
-            req.on('data', chunk => { body += chunk; });
+            let bodyBytes = 0;
+            req.on('data', (chunk: Buffer) => {
+                bodyBytes += chunk.length;
+                if (bodyBytes > MAX_BODY_BYTES) {
+                    res.writeHead(413).end();
+                    req.destroy();
+                    return;
+                }
+                body += chunk;
+            });
             req.on('end', () => {
                 try { onEvent(JSON.parse(body)); } catch (e) { console.warn('[HookServer] Failed to parse hook event body:', e); }
                 res.writeHead(200).end('ok');

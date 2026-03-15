@@ -3,14 +3,25 @@
   "displayName": "AgentDock",
   "description": "Kanban-style board for managing AI coding agent terminal sessions",
   "version": "0.1.0",
-  "publisher": "YOUR_PUBLISHER_ID",
+  "publisher": "trungsherlock2002",
   "engines": {
     "vscode": "^1.109.0"
   },
   "categories": [
+    "AI",
     "Other"
   ],
-  "keywords": ["agent", "claude", "ai", "terminal", "kanban"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Trungsherlock/agent-dock.git"
+  },
+  "keywords": [
+    "agent",
+    "claude",
+    "ai",
+    "terminal",
+    "kanban"
+  ],
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
@@ -26,6 +37,7 @@
     "views": {
       "agentdock": [
         {
+          "icon": "resources/icons/agentdock.png",
           "id": "agentdock.boardView",
           "name": "Agent Board",
           "type": "webview"
@@ -82,12 +94,14 @@
     "lint": "eslint src",
     "test": "vscode-test"
   },
+  "overrides": {
+    "diff": ">=8.0.3",
+    "serialize-javascript": ">=6.0.2"
+  },
   "devDependencies": {
-    "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "@types/vscode": "^1.109.0",
-    "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
     "eslint": "^9.39.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0"

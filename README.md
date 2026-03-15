@@ -1,71 +1,108 @@
-# agentdock README
+# AgentDock
 
-This is the README for your extension "agentdock". After writing up a brief description, we recommend including the following sections.
+A kanban-style board inside VS Code for managing multiple AI coding agent sessions side by side.
 
-## Features
-
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+> **Screenshot / demo GIF coming soon**
 
 ---
 
-## Following extension guidelines
+## Features
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+- **Visual session board** — see all your agent sessions at a glance, grouped by status: Running, Thinking, Idle, and Error
+- **One-click session management** — create, resume, rename, and end sessions without leaving VS Code
+- **Real-time status updates** — live tool-call tracking, token usage, cost estimate, and context window fill %
+- **Cohorts** — group related sessions into swim lanes to organise work by feature, branch, or task
+- **Skills** — attach reusable skill files to a session so agents have the right context from the start
+- **Permission alerts** — get notified inline when an agent is waiting for your approval
+- **Auto-discovery** — existing Claude Code sessions are detected automatically on startup; no manual wiring needed
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+---
 
-## Working with Markdown
+## Requirements
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and available on your `PATH`
+- VS Code `1.109.0` or later
+- Python 3 (for hook-based real-time updates — optional but recommended)
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+---
 
-## For more information
+## Getting Started
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+1. Install the extension
+2. Open a workspace folder
+3. Click the **AgentDock** icon in the Activity Bar
+4. Click **+** to start a new Claude Code session, or wait a moment for existing sessions to be detected automatically
 
-**Enjoy!**
+---
+
+## Session Board
+
+Each card on the board shows:
+
+| Field | Description |
+|---|---|
+| Name | Editable session label |
+| Status | `running` · `thinking` · `idle` · `error` |
+| Current tool | The tool Claude is executing right now |
+| Files touched | Count of files modified this session |
+| Tokens | Input / output token count |
+| Cost | Estimated USD cost |
+| Context window | Fill % of the context window |
+
+---
+
+## Cohorts
+
+Cohorts are horizontal swim lanes. Drag sessions between cohorts to organise them, or create a new cohort from the board header. Sessions in the same cohort typically share a common goal or branch.
+
+---
+
+## Skills
+
+Skills are Markdown files (`.md`) that provide reusable context or instructions to an agent. Place skill files in `.claude/skills/` inside your workspace. Attach one or more skills to a session from the session card menu — the skill content is injected when the session starts.
+
+---
+
+## How Real-Time Updates Work
+
+AgentDock installs a lightweight Python hook script into `~/.claude/settings.json` on first activation. The hook posts events (`PreToolUse`, `PostToolUse`, `Stop`, etc.) to a local HTTP server running inside VS Code, which updates the board in real time.
+
+If Python is not available, the extension falls back to polling Claude's log files. All data stays local — nothing is sent to any external service.
+
+---
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `AgentDock: New Agent Session` | Open a new terminal with Claude Code |
+| `AgentDock: End Session` | Close a session and its terminal |
+| `AgentDock: Rename Session` | Rename the selected session |
+| `AgentDock: Switch Agent Session` | Focus the terminal for the selected session |
+
+---
+
+## Extension Settings
+
+This extension does not add any VS Code settings at this time.
+
+---
+
+## Known Issues
+
+- Sessions from other workspaces may appear briefly on startup before being filtered out
+- Terminal restore on VS Code reload may create a duplicate terminal in rare cases (fix in progress)
+
+---
+
+## Release Notes
+
+### 0.1.0
+
+Initial release — session board, cohorts, skills, real-time hook integration, auto-discovery of Claude Code sessions.
+
+---
+
+## Contributing
+
+Issues and pull requests are welcome. Please open an issue before submitting a large change.

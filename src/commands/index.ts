@@ -27,9 +27,10 @@ export function registerCommands(
 
             const pending = resolvedTerminal ? sessionManager.consumePendingAgent(resolvedTerminal.name) : undefined;
             const cohortId = pending?.cohortId ?? 'uncategorized';
+            const sessionName = `${driver.displayName} ${id.slice(0, 8)}`;
             const session = sessionManager.add(
                 id,
-                resolvedTerminal?.name ?? `${driver.displayName} ${id.slice(0, 8)}`,
+                sessionName,
                 cohortId,
                 resolvedTerminal,
                 undefined,
@@ -39,6 +40,15 @@ export function registerCommands(
             sessionManager.setClaudeLogFile(session.id, filePath);
             if (pending?.skills?.length) {
                 sessionManager.setSkills(session.id, pending.skills);
+            }
+            // Rename the terminal to include the session ID so the terminal tab
+            // and the board card show the same name.
+            if (resolvedTerminal) {
+                resolvedTerminal.show(true);
+                vscode.commands.executeCommand(
+                    'workbench.action.terminal.renameWithArg',
+                    { name: sessionName },
+                );
             }
             const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager);
             context.subscriptions.push({ dispose: () => watcher.dispose() });
@@ -63,19 +73,13 @@ export function registerCommands(
         })
     );
 
-    context.subscriptions.push(
-        vscode.window.onDidCloseTerminal(terminal => {
-            sessionManager.removeByTerminal(terminal);
-        })
-    );
 
-    let nextIdx = 1;
     const defaultDriver = registry.getDefault();
     context.subscriptions.push(
         vscode.commands.registerCommand('agentdock.newSession', async () => {
             if (!defaultDriver) { return; }
             const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-            const name = `${defaultDriver.displayName} #${nextIdx++}`;
+            const name = `${defaultDriver.displayName} #${crypto.randomUUID().slice(0, 8)}`;
             const terminal = vscode.window.createTerminal({ name, cwd });
             terminal.show();
             terminal.sendText(defaultDriver.getLaunchCommand());

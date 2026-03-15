@@ -29,10 +29,11 @@ export function activate(context: vscode.ExtensionContext) {
     loadSessions(context, sessionManager);
     context.subscriptions.push(
         vscode.window.onDidCloseTerminal((closed) => {
-            const session = sessionManager.getAll().find(s => s.terminal === closed);
-            if (session) {
-                sessionManager.remove(session.id);
-            }
+            const session = sessionManager.getAll().find(s =>
+                s.terminal === closed ||
+                (s.name && s.name === closed.name)
+            );
+            if (session) { sessionManager.remove(session.id); }
         })
     );
     setupPersistence(context, sessionManager, cohortManager);

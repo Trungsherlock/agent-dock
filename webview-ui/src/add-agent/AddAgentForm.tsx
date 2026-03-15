@@ -29,13 +29,44 @@ type ExtMsg =
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const TOOL_OPTIONS = ['Read', 'Write', 'Edit', 'Bash', 'WebFetch', 'TodoRead', 'TodoWrite']
+const TOOL_OPTIONS = [
+  "Agent",
+  "AskUserQuestion",
+  "Bash",
+  "CronCreate",
+  "CronDelete",
+  "CronList",
+  "Edit",
+  "EnterPlanMode",
+  "EnterWorkTree",
+  "ExitPlanMode",
+  "ExitWorkTree",
+  "Glob",
+  "Grep",
+  "ListMcpResorucesTool",
+  "LSP",
+  "NotebookEdit",
+  "Read",
+  "ReadMcpResoourceTool",
+  "Skill",
+  "TaskCreate",
+  "TaskGet",
+  "TaskList",
+  "TaskOutput",
+  "TaskStop",
+  "TaskUpdate",
+  "TodoWrite",
+  "ToolSearch",
+  "WebFetch",
+  "WebSearch",
+  "Write",
+];
 const MODEL_OPTIONS = [
-  { label: 'Sonnet 4.6 (default)', value: 'claude-sonnet-4-6' },
-  { label: 'Opus 4.6', value: 'claude-opus-4-6' },
-  { label: 'Haiku 4.5', value: 'claude-haiku-4-5-20251001' },
-  { label: 'Inherit from session', value: '' },
-]
+  { label: "Inherit (default)", value: "" },
+  { label: "Sonnet 4.6", value: "claude-sonnet-4-6" },
+  { label: "Opus 4.6", value: "claude-opus-4-6" },
+  { label: "Haiku 4.5", value: "claude-haiku-4-5-20251001" },
+];
 
 // ── Style tokens (aligned with Card/List) ────────────────────────────────────
 
@@ -74,6 +105,22 @@ const inputStyle: React.CSSProperties = {
   transition: 'border-color 0.15s',
 }
 
+// ── Validation ────────────────────────────────────────────────────────────────
+
+const INVALID_CHARS = /[\\/:*?"<>|]/
+const RESERVED_NAMES = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i
+
+function validateName(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null // empty handled by canSubmit
+  if (trimmed.length > 200) return 'Name must be 200 characters or fewer.'
+  if (INVALID_CHARS.test(trimmed)) return 'Name contains invalid characters: \\ / : * ? " < > |'
+  if (trimmed.startsWith('.')) return 'Name cannot start with a dot.'
+  if (trimmed.endsWith('.')) return 'Name cannot end with a dot.'
+  if (RESERVED_NAMES.test(trimmed)) return `"${trimmed}" is a reserved system name.`
+  return null
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AddAgentForm() {
@@ -81,8 +128,9 @@ export function AddAgentForm() {
   const [skills, setSkills] = useState<SkillInfo[] | null>(null)
 
   const [name, setName] = useState('')
+  const [nameError, setNameError] = useState<string | null>(null)
   const [description, setDescription] = useState('')
-  const [model, setModel] = useState('claude-sonnet-4-6')
+  const [model, setModel] = useState('')
   const [tools, setTools] = useState<string[]>([...TOOL_OPTIONS])
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
   const [systemPrompt, setSystemPrompt] = useState('')
@@ -115,7 +163,7 @@ export function AddAgentForm() {
     )
   }
 
-  const canSubmit = name.trim().length > 0 && description.trim().length > 0 && !submitting
+  const canSubmit = name.trim().length > 0 && !nameError && description.trim().length > 0 && !submitting
 
   const handleSubmit = () => {
     if (!canSubmit) return
@@ -159,7 +207,7 @@ export function AddAgentForm() {
           textTransform: 'uppercase',
           color: S.textSecondary,
         }}>
-          New Agent
+          New SubAgent
         </span>
         {projectName && (
           <span style={{
@@ -179,14 +227,35 @@ export function AddAgentForm() {
         <Section title="Basic Info">
           <Field label="Name *">
             <input
-              style={inputStyle}
-              placeholder="e.g. API Builder"
+              style={{
+                ...inputStyle,
+                borderColor: nameError ? `${S.error}60` : S.border,
+              }}
+              placeholder="e.g. api-builder"
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={e => {
+                setName(e.target.value)
+                setNameError(validateName(e.target.value))
+              }}
               autoFocus
-              onFocus={e => { e.currentTarget.style.borderColor = `${S.accent}60` }}
-              onBlur={e => { e.currentTarget.style.borderColor = S.border }}
+              onFocus={e => {
+                e.currentTarget.style.borderColor = nameError ? `${S.error}80` : `${S.accent}60`
+              }}
+              onBlur={e => {
+                setNameError(validateName(e.target.value))
+                e.currentTarget.style.borderColor = nameError ? `${S.error}60` : S.border
+              }}
             />
+            {nameError && (
+              <p style={{
+                margin: '5px 0 0',
+                fontSize: '10px',
+                color: S.error,
+                fontFamily: S.mono,
+              }}>
+                {nameError}
+              </p>
+            )}
           </Field>
           <Field label="Description *">
             <input
@@ -213,9 +282,10 @@ export function AddAgentForm() {
 
         {/* Tools */}
         <Section title="Tools">
-          <p style={{ fontSize: '11px', color: S.textDim, margin: '0 0 8px' }}>
-            Unselected tools will be blocked for this agent.
-          </p>
+          <Hint>
+            Tools are built-in capabilities the agent can use during a task.
+            Uncheck any tool to explicitly block it for this agent.
+          </Hint>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {TOOL_OPTIONS.map(tool => (
               <CheckChip
@@ -230,6 +300,10 @@ export function AddAgentForm() {
 
         {/* Skills */}
         <Section title="Skills">
+          <Hint>
+            Skills are reusable prompt instructions loaded from <code style={{ color: S.textMuted, background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: '4px' }}>.claude/skills/</code>.
+            Attach skills to give the agent domain-specific knowledge or behaviour without bloating the system prompt.
+          </Hint>
           {skills === null ? (
             <p style={{ fontSize: '11px', color: S.textDim }}>Loading skills...</p>
           ) : skills.length === 0 ? (
@@ -252,7 +326,7 @@ export function AddAgentForm() {
                   color: S.warning,
                   marginBottom: '8px',
                 }}>
-                  Many skills selected — this may exceed Claude's context budget.
+                  Many skills selected. This may exceed Claude's context budget.
                 </div>
               )}
               {projectSkills.length > 0 && (
@@ -267,6 +341,9 @@ export function AddAgentForm() {
 
         {/* System Prompt */}
         <Section title="System Prompt">
+          <Hint>
+            The system prompt sets the agent's persona, goals, and constraints. It runs before every conversation.
+          </Hint>
           <textarea
             style={{
               ...inputStyle,
@@ -364,6 +441,19 @@ export function AddAgentForm() {
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
+
+function Hint({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{
+      margin: '0 0 4px',
+      fontSize: '11px',
+      color: S.textDim,
+      lineHeight: 1.6,
+    }}>
+      {children}
+    </p>
+  )
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -506,18 +596,6 @@ function SkillGroup({
                 <div style={{ fontSize: '12px', color: S.textPrimary, fontWeight: 600, fontFamily: S.mono }}>
                   {skill.name}
                 </div>
-                {skill.description && (
-                  <div style={{
-                    fontSize: '10px',
-                    color: S.textDim,
-                    marginTop: '2px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {skill.description}
-                  </div>
-                )}
               </div>
               {/* Badges */}
               <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>

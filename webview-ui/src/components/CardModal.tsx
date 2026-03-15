@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Terminal, Trash2 } from "lucide-react";
+import { Terminal } from "lucide-react";
 import { useBoardContext } from "../context/useBoardContext";
 import type { BoardCard, BoardList } from "../context/BoardContext";
 import type { SessionStatus } from "../messageProtocol";
@@ -166,8 +166,12 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
                 boxSizing: "border-box",
                 transition: "border-color 0.15s",
               }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(129,140,248,0.5)"; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "rgba(129,140,248,0.5)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+              }}
             />
             {name.trim() !== card.name && name.trim() !== "" && (
               <button
@@ -186,8 +190,12 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
                   fontWeight: 700,
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(0,212,170,0.22)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(0,212,170,0.12)"; }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(0,212,170,0.22)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(0,212,170,0.12)";
+                }}
               >
                 ✓
               </button>
@@ -330,7 +338,15 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
               }}
               title="End session"
             >
-              <Trash2 size={13} />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="24px"
+                viewBox="0 -960 960 960"
+                width="24px"
+                fill="#FFFFFF"
+              >
+                <path d="m680-160 120-120-28-28-72 72v-164h-40v164l-72-72-28 28 120 120Zm-560 0v-640l572 240h-12q-35 0-66 8t-60 22L200-680v140l240 60-240 60v140l216-92q-8 23-12 45.5t-4 46.5v2L120-160Zm418.5 21.5Q480-197 480-280t58.5-141.5Q597-480 680-480t141.5 58.5Q880-363 880-280t-58.5 141.5Q763-80 680-80t-141.5-58.5ZM200-372v-308 400-92Z" />
+              </svg>
             </button>
           </div>
         </div>

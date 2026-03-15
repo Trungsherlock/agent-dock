@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import { AgentDriver } from './AgentDriver';
 import { SessionManager } from '../managers/sessionManager';
 import { getAllClaudeLogFiles, watchForNewClaudeSessions, isConversationFile } from '../claudeWatcher';
@@ -12,7 +13,7 @@ export class ClaudeDriver implements AgentDriver {
     readonly usesLogFiles = true;
 
     getLaunchCommand(): string {
-        return 'claude';
+        return 'claude "hi"';
     }
 
     getResumeCommand(sessionId: string): string {
@@ -34,7 +35,22 @@ export class ClaudeDriver implements AgentDriver {
 
     watchForNewSessions(context: vscode.ExtensionContext, onNew: (filePath: string) => void): void {
         watchForNewClaudeSessions(context, (filePath) => {
-            if (isConversationFile(filePath)) { onNew(filePath); }
+            if (isConversationFile(filePath)) {
+                onNew(filePath);
+                return;
+            }
+            // File exists but no user/assistant entry yet (Claude just started).
+            // Watch it until the first message is written, then promote it.
+            let promoted = false;
+            const watcher = fs.watch(filePath, () => {
+                if (promoted) { return; }
+                if (isConversationFile(filePath)) {
+                    promoted = true;
+                    watcher.close();
+                    onNew(filePath);
+                }
+            });
+            context.subscriptions.push({ dispose: () => watcher.close() });
         });
     }
 

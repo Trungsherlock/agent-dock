@@ -5,13 +5,20 @@ export class SessionManager {
     private sessions: Session[] = [];
     private _onDidChange = new vscode.EventEmitter<void>();
     readonly onDidChange = this._onDidChange.event;
-    private _pendingByName = new Map<string, { cohortId: string; skills: string[] }>();
+    private _pendingByName = new Map<string, { cohortId: string; skills: string[]; registeredAt: number }>();
+    private static readonly PENDING_TTL_MS = 30_000;
 
     registerPendingAgent(terminalName: string, cohortId: string, skills: string[]): void {
-        this._pendingByName.set(terminalName, { cohortId, skills });
+        this._pendingByName.set(terminalName, { cohortId, skills, registeredAt: Date.now() });
     }
 
     consumePendingAgent(terminalName: string): { cohortId: string; skills: string[] } | undefined {
+        const now = Date.now();
+        for (const [name, entry] of this._pendingByName) {
+            if (now - entry.registeredAt > SessionManager.PENDING_TTL_MS) {
+                this._pendingByName.delete(name);
+            }
+        }
         const config = this._pendingByName.get(terminalName);
         if (config) { this._pendingByName.delete(terminalName); }
         return config;

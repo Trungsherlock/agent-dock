@@ -87,7 +87,7 @@ export function processTranscriptLine(
     if (addedInput > 0 || addedOutput > 0) {
         patch.tokensInput = session.tokensInput + addedInput;
         patch.tokensOutput = session.tokensOutput + addedOutput;
-        patch.contextWindowUsed = session.contextWindowUsed + addedOutput;
+        patch.contextWindowUsed = session.contextWindowUsed + addedInput + addedOutput;
     }
     if (Object.keys(patch).length > 0) {
         sessionManager.updateMetrics(sessionId, patch);
