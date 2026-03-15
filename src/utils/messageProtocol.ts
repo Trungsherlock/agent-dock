@@ -46,7 +46,7 @@ export type WebviewMessage =
     | { command: 'deleteCohort'; cohortId: string }
     | { command: 'resumeSession'; sessionId: string }
     | { command: 'getArchivedSessions' }
-    | { command: 'addExistingSession'; sessionId: string }
+    | { command: 'addExistingSession'; sessionId: string, cohortId: string }
     | { command: 'openAddAgentPanel'; cohortId: string }
     | { command: 'openFile'; filePath: string };
 

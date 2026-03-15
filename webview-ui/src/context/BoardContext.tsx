@@ -520,7 +520,7 @@ interface BoardContextValue {
   renameCohort: (id: string, label: string) => void;
   deleteCohort: (id: string) => void;
   fetchArchivedSessions: () => void;
-  addExistingSession: (sessionId: string) => void;
+  addExistingSession: (sessionId: string, cohortId: string) => void;
   openAddAgentPanel: (cohortId: string) => void;
 }
 
@@ -629,8 +629,8 @@ export function BoardProvider({ children }: { children: ReactNode }) {
     vscode.postMessage({ command: "getArchivedSessions" });
   };
 
-  const addExistingSession = (sessionId: string) => {
-    vscode.postMessage({ command: "addExistingSession", sessionId });
+  const addExistingSession = (sessionId: string, cohortId: string) => {
+    vscode.postMessage({ command: "addExistingSession", sessionId, cohortId });
   };
 
   const openAddAgentPanel = (cohortId: string) => {

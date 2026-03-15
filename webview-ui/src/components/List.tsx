@@ -399,7 +399,7 @@ export function List({ list, innerRef, draggableProps, dragHandleProps }: ListPr
                       width: "100%",
                     }}
                     onClick={() => {
-                      addExistingSession(s.id);
+                      addExistingSession(s.id, list.id);
                       setShowAddMenu(false);
                       setShowArchived(false);
                     }}
