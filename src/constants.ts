@@ -11,6 +11,7 @@ export interface PersistedSession {
     note: string;
     status: string;
     claudeLogFile?: string;
+    terminalCreationName?: string;
     skills?: string[];
 }
 

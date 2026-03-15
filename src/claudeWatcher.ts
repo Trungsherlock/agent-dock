@@ -7,7 +7,7 @@ const POLL_INTERVAL_MS = 2000;
 
 export function isConversationFile(filePath: string): boolean {
     try {
-        const buf = Buffer.alloc(4096);
+        const buf = Buffer.alloc(16384);
         const fd = fs.openSync(filePath, 'r');
         const bytesRead = fs.readSync(fd, buf, 0, buf.length, 0);
         fs.closeSync(fd);
@@ -99,18 +99,24 @@ export function watchForNewClaudeSessions(
     context: vscode.ExtensionContext,
     onNewSession: (filePath: string) => void,
 ): void {
-    const dirs = getClaudeProjectDirs();
-    if (dirs.length === 0) { return; }
+    const projectsRoot = path.join(os.homedir(), '.claude', 'projects');
+
+    // Ensure the root directory exists so we can watch it even before Claude has run.
+    try { fs.mkdirSync(projectsRoot, { recursive: true }); } catch { /* ignore */ }
 
     const knownFiles = new Set<string>();
-    scanForNewFiles(dirs, knownFiles, () => {});
-
+    const watchedDirs = new Set<string>();
     const fsWatchers: fs.FSWatcher[] = [];
+
+    // Seed known files and return a list of dirs we failed to watch (for polling).
     const unwatchedDirs: string[] = [];
-    for (const dir of dirs) {
+
+    function watchDir(dir: string): void {
+        if (watchedDirs.has(dir)) { return; }
+        watchedDirs.add(dir);
         try {
             const w = fs.watch(dir, () => {
-                scanForNewFiles(getClaudeProjectDirs(), knownFiles, onNewSession);
+                scanForNewFiles([dir], knownFiles, onNewSession);
             });
             fsWatchers.push(w);
         } catch (e) {
@@ -119,10 +125,35 @@ export function watchForNewClaudeSessions(
         }
     }
 
+    // Watch all project subdirectories that already exist.
+    const existingDirs = getClaudeProjectDirs();
+    scanForNewFiles(existingDirs, knownFiles, () => {});
+    for (const dir of existingDirs) { watchDir(dir); }
+
+    // Watch the root projects/ directory so new subdirectories are detected
+    // (e.g. first time Claude runs in a workspace — the subdir doesn't exist yet).
+    try {
+        const rootWatcher = fs.watch(projectsRoot, () => {
+            const currentDirs = getClaudeProjectDirs();
+            for (const dir of currentDirs) {
+                watchDir(dir); // no-op if already watched
+                scanForNewFiles([dir], knownFiles, onNewSession);
+            }
+        });
+        fsWatchers.push(rootWatcher);
+    } catch (e) {
+        console.warn(`[ClaudeWatcher] Could not watch projects root: ${projectsRoot}`, e);
+        // Fall back to polling the root by re-checking all dirs periodically.
+        unwatchedDirs.push(projectsRoot);
+    }
+
+    // Polling fallback for any dirs that couldn't be watched with fs.watch().
     let pollTimer: NodeJS.Timeout | undefined;
     if (unwatchedDirs.length > 0) {
         pollTimer = setInterval(() => {
-            scanForNewFiles(unwatchedDirs, knownFiles, onNewSession);
+            const currentDirs = getClaudeProjectDirs();
+            for (const dir of currentDirs) { watchDir(dir); }
+            scanForNewFiles(currentDirs, knownFiles, onNewSession);
         }, POLL_INTERVAL_MS);
     }
 

@@ -20,7 +20,9 @@ export function loadSessions(
             if (s.skills?.length) { sessionManager.setSkills(session.id, s.skills); }
             sessionManager.setStatus(session.id, 'idle');
             sessionManager.setClaudeLogFile(session.id, s.claudeLogFile);
-            const existing = vscode.window.terminals.find(t => t.name === s.name);
+            const existing = vscode.window.terminals.find(t =>
+                s.terminalCreationName ? t.name === s.terminalCreationName : t.name === s.name
+            );
             if (existing) { sessionManager.setTerminal(session.id, existing); }
             const watcher = new ClaudeLogWatcher(session.id, s.claudeLogFile, sessionManager, true);
             context.subscriptions.push({ dispose: () => watcher.dispose() });
@@ -60,6 +62,7 @@ export function setupPersistence(
                 note: s.note,
                 status: s.status,
                 claudeLogFile: s.claudeLogFile,
+                terminalCreationName: s.terminalCreationName,
                 skills: s.skills,
             }));
             context.workspaceState.update(SESSIONS_KEY, data);

@@ -65,9 +65,12 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
         const pollInterval = setInterval(() => {
             if (this._messageHandler.renamingSessionId) { return; }
             for (const session of this._sessionManager.getAll()) {
-                if (session.terminal && session.terminal.name !== session.name) {
-                    this._sessionManager.rename(session.id, session.terminal.name);
-                }
+                if (!session.terminal) { continue; }
+                if (session.terminal.name === session.name) { continue; }
+                // Skip if the terminal is still at its original creation name — not user-renamed.
+                // After VS Code reload, terminal.name always returns the creation name.
+                if (session.terminal.name === session.terminalCreationName) { continue; }
+                this._sessionManager.rename(session.id, session.terminal.name);
             }
         }, 500);
         this._context.subscriptions.push({ dispose: () => clearInterval(pollInterval) });
@@ -78,9 +81,15 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
     }
 
     private _postStateUpdate(): void {
+        const sessions: ReturnType<typeof serializeSession>[] = [];
+        for (const s of this._sessionManager.getAll()) {
+            try { sessions.push(serializeSession(s)); } catch (e) {
+                console.warn('[BoardViewProvider] Failed to serialize session', s.id, e);
+            }
+        }
         const msg: ExtensionMessage = {
             command: 'stateUpdate',
-            sessions: this._sessionManager.getAll().map(serializeSession),
+            sessions,
             cohorts: this._cohortManager.getAll().map(c => ({ id: c.id, label: c.label })),
         };
         this._view?.webview.postMessage(msg);
@@ -133,8 +142,7 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
     }
 
     dispose() {
-        for (const session of this._sessionManager.getAll()) {
-            session.terminal?.dispose();
-        }
+        // Do NOT dispose terminals here — they belong to the user, not the extension.
+        // VS Code manages terminal lifecycle independently.
     }
 }

@@ -10,7 +10,6 @@ import { AddAgentPanel } from '../panels/AddAgentPanel';
 import { AgentRegistry } from '../agents/AgentRegistry';
 
 export class MessageHandler {
-    private _nextAgentIdx = 1;
     renamingSessionId: string | undefined;
 
     constructor(
@@ -33,19 +32,18 @@ export class MessageHandler {
                 if (!s) { break; }
                 if (s.terminal) {
                     s.terminal.show();
-                } else {
-                    const found = vscode.window.terminals.find(t => t.name === s.name);
-                    if (found) {
-                        found.show();
-                        this._sessionManager.setTerminal(s.id, found);
-                    }
+                } else if (s.terminalCreationName) {
+                    const found = vscode.window.terminals.find(t => t.name === s.terminalCreationName);
+                    if (found) { found.show(); this._sessionManager.setTerminal(s.id, found); }
                 }
                 break;
             }
             case 'endSession': {
                 const s = this._sessionManager.getById(message.sessionId);
                 if (s) {
-                    s.terminal?.dispose();
+                    const terminal = s.terminal
+                        ?? vscode.window.terminals.find(t => t.name === s.terminalCreationName);
+                    terminal?.dispose();
                     this._sessionManager.remove(message.sessionId);
                 }
                 break;
@@ -55,12 +53,15 @@ export class MessageHandler {
                 const s = this._sessionManager.getById(message.sessionId);
                 if (s?.terminal) {
                     this.renamingSessionId = message.sessionId;
-                    s.terminal.show(true);
-                    await vscode.commands.executeCommand(
-                        'workbench.action.terminal.renameWithArg',
-                        { name: message.newName }
-                    );
-                    this.renamingSessionId = undefined;
+                    try {
+                        s.terminal.show(true);
+                        await vscode.commands.executeCommand(
+                            'workbench.action.terminal.renameWithArg',
+                            { name: message.newName }
+                        );
+                    } finally {
+                        this.renamingSessionId = undefined;
+                    }
                 }
                 break;
             }
@@ -81,24 +82,26 @@ export class MessageHandler {
                 if (!s) { break; }
                 const driver = this._registry.getById(s.framework) ?? this._registry.getDefault();
                 if (!driver) { break; }
+                const terminalCreationName = `${s.name} #${crypto.randomUUID().slice(0, 8)}`;
                 const terminal = vscode.window.createTerminal({
-                    name: s.name,
+                    name: terminalCreationName,
                     cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
                 });
                 terminal.show();
                 terminal.sendText(driver.getResumeCommand(message.sessionId));
                 this._sessionManager.setTerminal(message.sessionId, terminal);
+                this._sessionManager.setTerminalCreationName(message.sessionId, terminalCreationName);
                 break;
             }
             case 'newSession': {
                 const driver = this._registry.getDefault();
                 if (!driver) { break; }
                 const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-                const name = `${driver.displayName} #${this._nextAgentIdx++}`;
-                const terminal = vscode.window.createTerminal({ name, cwd });
+                const terminalCreationName = `${driver.displayName} #${crypto.randomUUID().slice(0, 8)}`;
+                const terminal = vscode.window.createTerminal({ name: terminalCreationName, cwd });
                 terminal.show();
                 terminal.sendText(driver.getLaunchCommand());
-                this._sessionManager.registerPendingAgent(name, message.cohortId, []);
+                this._sessionManager.registerPendingAgent(terminalCreationName, message.cohortId, []);
                 break;
             }
             case 'createCohort': {
@@ -127,25 +130,12 @@ export class MessageHandler {
                 break;
             }
             case 'openAddAgentPanel': {
-                const driver = this._registry.getDefault();
-                if (!driver) { break; }
                 const projectRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
                 AddAgentPanel.createOrShow(
                     this._context,
                     projectRoot,
                     message.cohortId,
                     (config, filePath) => {
-                        const terminal = vscode.window.createTerminal({
-                            name: config.name,
-                            cwd: projectRoot,
-                        });
-                        terminal.show();
-                        terminal.sendText(driver.getLaunchCommand());
-                        this._sessionManager.registerPendingAgent(
-                            config.name,
-                            config.cohortId ?? 'uncategorized',
-                            config.skills ?? [],
-                        );
                         vscode.window.showInformationMessage(
                             `Agent '${config.name}' created at ${filePath}`,
                         );
@@ -172,17 +162,21 @@ export class MessageHandler {
                 const archived = getArchivedSessions(this._sessionManager, workspacePath, nameMap, skillsMap);
                 const found = archived.find(a => a.id === message.sessionId);
                 if (!found) { break; }
+                // Guard: don't create a duplicate if the session is already active.
+                if (this._sessionManager.getById(found.id)) { break; }
                 const session = this._sessionManager.add(found.id, found.name, 'uncategorized');
                 this._sessionManager.setClaudeLogFile(session.id, found.claudeLogFile);
                 this._sessionManager.setStatus(session.id, 'idle');
                 if (found.skills?.length) { this._sessionManager.setSkills(session.id, found.skills); }
+                const terminalCreationName = `${found.name} #${crypto.randomUUID().slice(0, 8)}`;
                 const terminal = vscode.window.createTerminal({
-                    name: found.name,
+                    name: terminalCreationName,
                     cwd: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
                 });
                 terminal.sendText(driver.getResumeCommand(found.id));
                 terminal.show();
                 this._sessionManager.setTerminal(found.id, terminal);
+                this._sessionManager.setTerminalCreationName(found.id, terminalCreationName);
                 const watcher = new ClaudeLogWatcher(session.id, found.claudeLogFile, this._sessionManager, true);
                 this._context.subscriptions.push({ dispose: () => watcher.dispose() });
                 break;
