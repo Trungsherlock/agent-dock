@@ -22,22 +22,41 @@ interface ClaudeEntry {
     type: string;
     subtype?: string;
     message?: {
+        roles?: string;
         content?: string | ContentBlock[];
         usage?: { input_tokens?: number; output_tokens?: number };
     };
+}
+
+function isHumanTurn(entry: ClaudeEntry): boolean {
+    const content = entry.message?.content;
+    if (typeof content === 'string') { return true; }
+    if (!Array.isArray(content) || content.length === 0) { return false; }
+    return content.some(b => b.type === 'text');
 }
 
 export function processTranscriptLine(
     raw: string,
     sessionId: string,
     sessionManager: SessionManager,
-    skipStatus: boolean,
+    skipStatus = false,
 ): boolean {
     let entry: ClaudeEntry;
     try { entry = JSON.parse(raw); } catch { return false; }
 
-    if (entry.type === 'system' && entry.subtype === 'turn_duration') {
+    if (entry.type === 'system' && entry.subtype === 'stop_hook_summary') {
         sessionManager.updateMetrics(sessionId, { status: 'idle' });
+        return true;
+    }
+
+    if (entry.type === 'user') {
+        if (!skipStatus && isHumanTurn(entry)) {
+            sessionManager.updateMetrics(sessionId, { status: 'thinking' });
+            sessionManager.setCurrentTool(sessionId, undefined);
+        } else if (!skipStatus) {
+            // Tool result: tool just completed, clear currentTool
+            sessionManager.setCurrentTool(sessionId, undefined);
+        }
         return true;
     }
 
@@ -45,8 +64,6 @@ export function processTranscriptLine(
 
     const content = entry.message?.content;
     if (!Array.isArray(content)) { return false; }
-
-    if (!skipStatus) { sessionManager.updateMetrics(sessionId, { status: 'thinking' }); }
 
     const session = sessionManager.getById(sessionId);
     if (!session) { return false; }
@@ -76,11 +93,21 @@ export function processTranscriptLine(
         }
     }
 
+    if (newToolCalls.length > 0 && !skipStatus) {
+        const firstTool = content.find(b => b.type === 'tool_use');
+        if (firstTool?.name) {
+            const fileKey = FILE_TOOLS[firstTool.name];
+            const target = fileKey && firstTool.input ? String(firstTool.input[fileKey] ?? '') : '';
+            sessionManager.setCurrentTool(sessionId, { name: firstTool.name, target });
+        }
+    }
+
     const usage = entry.message?.usage;
     const addedInput = usage?.input_tokens ?? 0;
     const addedOutput = usage?.output_tokens ?? 0;
 
     const patch: Parameters<SessionManager['updateMetrics']>[1] = {};
+    if (newToolCalls.length > 0 && !skipStatus) { patch.status = 'running'; }
     if (currentTask) { patch.currentTask = currentTask; }
     if (newToolCalls.length > 0) { patch.toolCalls = [...session.toolCalls, ...newToolCalls].slice(-50); }
     if (newFiles.length > 0) { patch.filesTouched = [...new Set([...session.filesTouched, ...newFiles])]; }
