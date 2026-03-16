@@ -337,7 +337,7 @@ export function Card({ card, index, onClick }: CardProps) {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {card.currentTool.target.split("/").pop()}
+                      {card.currentTool.target.split(/[\\/]/).pop()}
                     </span>
                   )}
                   {card.waitingForPermission && (

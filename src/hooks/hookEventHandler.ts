@@ -30,6 +30,15 @@ export function handleHookEvent(event: HookEvent, sessionManager: SessionManager
 
         case 'PermissionRequest':
             sessionManager.setPermissionRequest(event.session_id, true);
+            if (event.tool_name) {
+                const session = sessionManager.getById(event.session_id);
+                if (!session?.currentTool) {
+                    sessionManager.setCurrentTool(event.session_id, {
+                        name: event.tool_name,
+                        target: extractTarget(event.tool_input),
+                    });
+                }
+            }
             break;
 
         case 'Stop':

@@ -11,7 +11,7 @@ try:
     import urllib.request
     data = json.load(sys.stdin)
     req = urllib.request.Request(
-        "http://localhost:3456/hook",
+        "http://127.0.0.1:3456/hook",
         data=json.dumps(data).encode(),
         headers={"Content-Type": "application/json"},
         method="POST"

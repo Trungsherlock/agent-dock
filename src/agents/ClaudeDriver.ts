@@ -55,7 +55,7 @@ export class ClaudeDriver implements AgentDriver {
     }
 
     parseLogLine(line: string, sessionId: string, sessionManager: SessionManager): void {
-        processTranscriptLine(line, sessionId, sessionManager, false);
+        processTranscriptLine(line, sessionId, sessionManager);
     }
 
     installHooks(): void {
