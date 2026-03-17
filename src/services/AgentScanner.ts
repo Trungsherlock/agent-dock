@@ -98,7 +98,7 @@ export class AgentScanner {
             if (colonIdx === -1) { continue; }
             const key = line.slice(0, colonIdx).trim();
             const value = line.slice(colonIdx + 1).trim();
-            if (key && key !== 'skills') { fields[key] = value; }
+            if (key && key !== 'skills') { fields[key] = value.replace(/^"|"$/g, ''); }
         }
 
         return result;

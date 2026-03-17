@@ -163,7 +163,6 @@ export class MessageHandler {
                 const archived = getArchivedSessions(this._sessionManager, workspacePath, nameMap, skillsMap);
                 const found = archived.find(a => a.id === message.sessionId);
                 if (!found) { break; }
-                // Guard: don't create a duplicate if the session is already active.
                 if (this._sessionManager.getById(found.id)) { break; }
                 const session = this._sessionManager.add(found.id, found.name, message.cohortId);
                 this._sessionManager.setClaudeLogFile(session.id, found.claudeLogFile);

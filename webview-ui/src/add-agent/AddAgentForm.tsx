@@ -24,7 +24,7 @@ interface AgentConfig {
 }
 
 type ExtMsg =
-  | { command: 'initData'; skills: SkillInfo[]; projectName: string }
+  | { command: 'initData'; skills: SkillInfo[]; projectName: string; scope: 'global' | 'project' }
   | { command: 'createError'; message: string }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -63,9 +63,9 @@ const TOOL_OPTIONS = [
 ];
 const MODEL_OPTIONS = [
   { label: "Inherit (default)", value: "" },
-  { label: "Sonnet 4.6", value: "claude-sonnet-4-6" },
-  { label: "Opus 4.6", value: "claude-opus-4-6" },
-  { label: "Haiku 4.5", value: "claude-haiku-4-5-20251001" },
+  { label: "Sonnet 4.6", value: "sonnet" },
+  { label: "Opus 4.6", value: "opus" },
+  { label: "Haiku 4.5", value: "haiku" },
 ];
 
 // ── Style tokens (aligned with Card/List) ────────────────────────────────────
@@ -135,6 +135,7 @@ export function AddAgentForm() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
   const [systemPrompt, setSystemPrompt] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [scope, setScope] = useState<'global' | 'project'>('project')
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -144,6 +145,7 @@ export function AddAgentForm() {
       if (msg.command === 'initData') {
         setProjectName(msg.projectName)
         setSkills(msg.skills)
+        setScope(msg.scope)
       } else if (msg.command === 'createError') {
         setError(msg.message)
         setSubmitting(false)
@@ -176,7 +178,7 @@ export function AddAgentForm() {
       tools,
       skills: selectedSkills,
       systemPrompt: systemPrompt.trim(),
-      scope: 'project',
+      scope,
       projectRoot: '',
       cohortId: '',
     }

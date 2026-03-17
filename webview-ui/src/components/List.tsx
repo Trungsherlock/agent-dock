@@ -21,8 +21,20 @@ export function List({ list, innerRef, draggableProps, dragHandleProps }: ListPr
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [compact, setCompact] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setCompact(entry.contentRect.width < 180);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!showAddMenu) return;
@@ -60,7 +72,7 @@ export function List({ list, innerRef, draggableProps, dragHandleProps }: ListPr
   return (
     <>
       <div
-        ref={innerRef}
+        ref={(el) => { containerRef.current = el; innerRef?.(el); }}
         {...draggableProps}
         className="flex flex-col w-full"
         style={{
@@ -144,21 +156,23 @@ export function List({ list, innerRef, draggableProps, dragHandleProps }: ListPr
             </span>
           )}
 
-          {/* Card count badge */}
-          <span
-            style={{
-              fontFamily: "monospace",
-              fontSize: "10px",
-              fontWeight: 600,
-              color: "#8a97b4",
-              background: "rgba(255,255,255,0.07)",
-              padding: "1px 8px",
-              borderRadius: "99px",
-              border: "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
-            {cards.length}
-          </span>
+          {/* Card count badge — hidden when compact */}
+          {!compact && (
+            <span
+              style={{
+                fontFamily: "monospace",
+                fontSize: "10px",
+                fontWeight: 600,
+                color: "#8a97b4",
+                background: "rgba(255,255,255,0.07)",
+                padding: "1px 8px",
+                borderRadius: "99px",
+                border: "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              {cards.length}
+            </span>
+          )}
 
           {!isUncategorized && (
             <button

@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
+
 export interface AgentConfig {
     name: string;
     description: string;
@@ -17,7 +18,9 @@ export interface AgentConfig {
 export class AgentWriter {
     async write(config: AgentConfig): Promise<string> {
         const slug = this._slugify(config.name);
-        const agentsDir = path.join(config.projectRoot, '.claude', 'agents');
+        const agentsDir = config.scope === 'global'
+            ? path.join(os.homedir(), '.claude', 'agents')
+            : path.join(config.projectRoot, '.claude', 'agents');
 
         try {
             fs.mkdirSync(agentsDir, { recursive: true });

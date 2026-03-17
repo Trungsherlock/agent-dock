@@ -1,37 +1,12 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import vscode from '../vscodeApi';
 import type { AgentInfo } from '../messageProtocol';
 
-
-const FRAMEWORK_BADGE: Record<string, { bg: string; color: string; border: string }> = {
-  claude: {
-    bg: "rgba(232,121,58,0.15)",
-    color: "#f09255",
-    border: "1px solid rgba(232,121,58,0.35)",
-  },
-  custom: {
-    bg: "rgba(91,124,246,0.15)",
-    color: "#7b9bff",
-    border: "1px solid rgba(91,124,246,0.35)",
-  },
+const FRAMEWORK_BADGE = {
+  bg: "rgba(232,121,58,0.15)",
+  color: "#f09255",
+  border: "1px solid rgba(232,121,58,0.35)",
 };
-
-const SCOPE_BADGE: Record<
-  string,
-  { bg: string; color: string; border: string }
-> = {
-  project: {
-    bg: "rgba(91,124,246,0.15)",
-    color: "#7b9bff",
-    border: "1px solid rgba(91,124,246,0.35)",
-  },
-  global: {
-    bg: "rgba(16,185,129,0.15)",
-    color: "#34d399",
-    border: "1px solid rgba(16,185,129,0.35)",
-  },
-};
-
 
 function Pill({ label, color }: { label: string; color: string }) {
   return (
@@ -55,18 +30,29 @@ function Pill({ label, color }: { label: string; color: string }) {
 
 export function SubAgentCard({ agent }: { agent: AgentInfo }) {
   const [expanded, setExpanded] = useState(false);
-  const frameworkBadge = FRAMEWORK_BADGE["claude"];
-  const scopeBadge = SCOPE_BADGE[agent.scope] ?? SCOPE_BADGE.global;
+  const [compact, setCompact] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
   const hasExtension = !!(agent.model || agent.tools.length || agent.skills.length);
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setCompact(entry.contentRect.width < 180);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
     <div style={{ padding: "4px 6px" }}>
       <div
-        onClick={() => hasExtension && setExpanded((v) => !v)}
+        ref={cardRef}
+        onClick={() => !compact && hasExtension && setExpanded((v) => !v)}
         style={{
           position: "relative",
           backgroundColor: "#13182a",
-          border: `1px solid rgba(255,255,255,0.08)`,
+          border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: "14px",
           overflow: "hidden",
           transition: "border-color 0.15s ease, background-color 0.15s ease",
@@ -81,58 +67,30 @@ export function SubAgentCard({ agent }: { agent: AgentInfo }) {
           (e.currentTarget as HTMLDivElement).style.backgroundColor = "#13182a";
         }}
       >
-        {/* Top accent line */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: "2px",
-          }}
-        />
-
         {/* Main content */}
-        <div style={{ padding: "14px 16px 14px 16px" }}>
+        <div style={{ padding: compact ? "10px 12px" : "14px 16px" }}>
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            {/* Framework badge */}
-            <span
-              style={{
-                fontFamily: "monospace",
-                fontSize: "10px",
-                fontWeight: 700,
-                padding: "3px 9px",
-                borderRadius: "6px",
-                letterSpacing: "0.6px",
-                textTransform: "uppercase",
-                background: frameworkBadge.bg,
-                color: frameworkBadge.color,
-                border: frameworkBadge.border,
-                flexShrink: 0,
-              }}
-            >
-              claude
-            </span>
-
-            {/* Scope badge */}
-            <span
-              style={{
-                fontFamily: "monospace",
-                fontSize: "10px",
-                fontWeight: 700,
-                padding: "3px 9px",
-                borderRadius: "6px",
-                letterSpacing: "0.6px",
-                textTransform: "uppercase",
-                background: scopeBadge.bg,
-                color: scopeBadge.color,
-                border: scopeBadge.border,
-                flexShrink: 0,
-              }}
-            >
-              {agent.scope}
-            </span>
+            {/* Framework badge — hidden when compact */}
+            {!compact && (
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  padding: "3px 9px",
+                  borderRadius: "6px",
+                  letterSpacing: "0.6px",
+                  textTransform: "uppercase",
+                  background: FRAMEWORK_BADGE.bg,
+                  color: FRAMEWORK_BADGE.color,
+                  border: FRAMEWORK_BADGE.border,
+                  flexShrink: 0,
+                }}
+              >
+                claude
+              </span>
+            )}
 
             {/* Name */}
             <span
@@ -144,6 +102,7 @@ export function SubAgentCard({ agent }: { agent: AgentInfo }) {
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
                 flex: 1,
+                minWidth: 0,
                 letterSpacing: "-0.1px",
               }}
             >
@@ -152,7 +111,10 @@ export function SubAgentCard({ agent }: { agent: AgentInfo }) {
 
             {/* Open button */}
             <button
-              onClick={(e) => { e.stopPropagation(); vscode.postMessage({ command: "openFile", filePath: agent.filePath }); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                vscode.postMessage({ command: "openFile", filePath: agent.filePath });
+              }}
               style={{
                 flexShrink: 0,
                 fontFamily: "monospace",
@@ -181,8 +143,8 @@ export function SubAgentCard({ agent }: { agent: AgentInfo }) {
             </button>
           </div>
 
-          {/* Description */}
-          {agent.description && (
+          {/* Description — hidden when compact */}
+          {!compact && agent.description && (
             <p
               style={{
                 margin: "10px 0 0",
@@ -200,8 +162,8 @@ export function SubAgentCard({ agent }: { agent: AgentInfo }) {
           )}
         </div>
 
-        {/* Extension panel */}
-        {hasExtension && expanded && (
+        {/* Extension panel — hidden when compact */}
+        {!compact && hasExtension && expanded && (
           <div
             style={{
               borderTop: "1px solid rgba(255,255,255,0.06)",
@@ -245,7 +207,7 @@ export function SubAgentCard({ agent }: { agent: AgentInfo }) {
             )}
 
             {/* Tools */}
-            {agent.tools && agent.tools.length > 0 && (
+            {agent.tools.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
                 <span
                   style={{
@@ -268,7 +230,7 @@ export function SubAgentCard({ agent }: { agent: AgentInfo }) {
             )}
 
             {/* Skills */}
-            {agent.skills && agent.skills.length > 0 && (
+            {agent.skills.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
                 <span
                   style={{
