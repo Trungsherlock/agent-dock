@@ -19,12 +19,14 @@ export class MessageHandler {
         private readonly _postMessage: (msg: unknown) => void,
         private readonly _triggerStateUpdate: () => void,
         private readonly _registry: AgentRegistry,
+        private readonly _onAgentsChanged: () => Promise<void> = async () => {},
     ) {}
 
     async handle(message: WebviewMessage): Promise<void> {
         switch (message.command) {
             case 'ready': {
                 this._triggerStateUpdate();
+                await this._onAgentsChanged();
                 break;
             }
             case 'focusSession': {
@@ -133,10 +135,11 @@ export class MessageHandler {
                     this._context,
                     projectRoot,
                     message.cohortId,
-                    (config, filePath) => {
+                    async (config, filePath) => {
                         vscode.window.showInformationMessage(
                             `Agent '${config.name}' created at ${filePath}`,
                         );
+                        await this._onAgentsChanged();
                     },
                 );
                 break;

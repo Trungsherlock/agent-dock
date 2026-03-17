@@ -1,6 +1,5 @@
 import { useBoardContext } from "../context/useBoardContext";
 import { SubAgentCard } from "./SubAgentCard";
-import { MOCK_SUBAGENTS } from "./mock-data";
 
 function AddButton({ onClick }: { onClick: () => void }) {
   return (
@@ -29,9 +28,8 @@ function AddButton({ onClick }: { onClick: () => void }) {
 }
 
 export function SubAgentTab({ visible }: { visible: boolean }) {
-  const { openAddAgentPanel } = useBoardContext();
-
-  const subagents = MOCK_SUBAGENTS;
+  const { openAddAgentPanel, subAgents } = useBoardContext();
+  const subagents = subAgents;
 
   return (
     <div
@@ -72,7 +70,7 @@ export function SubAgentTab({ visible }: { visible: boolean }) {
           </div>
         ) : (
           <>
-            {subagents.map((agent) => <SubAgentCard key={agent.id} agent={agent} />)}
+            {subagents.map((agent) => <SubAgentCard key={agent.name} agent={agent} />)}
             <div style={{ padding: "4px 6px 2px" }}>
               <AddButton onClick={() => openAddAgentPanel("uncategorized")} />
             </div>

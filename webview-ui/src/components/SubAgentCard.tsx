@@ -1,14 +1,7 @@
 import { useState } from "react";
+import vscode from '../vscodeApi';
+import type { AgentInfo } from '../messageProtocol';
 
-export interface SubAgent {
-  id: string;
-  name: string;
-  description?: string;
-  framework: "claude" | "custom";
-  model?: string;
-  tools?: string[];
-  skills?: string[];
-}
 
 const FRAMEWORK_BADGE: Record<string, { bg: string; color: string; border: string }> = {
   claude: {
@@ -22,6 +15,23 @@ const FRAMEWORK_BADGE: Record<string, { bg: string; color: string; border: strin
     border: "1px solid rgba(91,124,246,0.35)",
   },
 };
+
+const SCOPE_BADGE: Record<
+  string,
+  { bg: string; color: string; border: string }
+> = {
+  project: {
+    bg: "rgba(91,124,246,0.15)",
+    color: "#7b9bff",
+    border: "1px solid rgba(91,124,246,0.35)",
+  },
+  global: {
+    bg: "rgba(16,185,129,0.15)",
+    color: "#34d399",
+    border: "1px solid rgba(16,185,129,0.35)",
+  },
+};
+
 
 function Pill({ label, color }: { label: string; color: string }) {
   return (
@@ -43,10 +53,11 @@ function Pill({ label, color }: { label: string; color: string }) {
   );
 }
 
-export function SubAgentCard({ agent }: { agent: SubAgent }) {
+export function SubAgentCard({ agent }: { agent: AgentInfo }) {
   const [expanded, setExpanded] = useState(false);
-  const frameworkBadge = FRAMEWORK_BADGE[agent.framework] ?? FRAMEWORK_BADGE.custom;
-  const hasExtension = !!(agent.model || (agent.tools?.length) || (agent.skills?.length));
+  const frameworkBadge = FRAMEWORK_BADGE["claude"];
+  const scopeBadge = SCOPE_BADGE[agent.scope] ?? SCOPE_BADGE.global;
+  const hasExtension = !!(agent.model || agent.tools.length || agent.skills.length);
 
   return (
     <div style={{ padding: "4px 6px" }}>
@@ -101,7 +112,26 @@ export function SubAgentCard({ agent }: { agent: SubAgent }) {
                 flexShrink: 0,
               }}
             >
-              {agent.framework}
+              claude
+            </span>
+
+            {/* Scope badge */}
+            <span
+              style={{
+                fontFamily: "monospace",
+                fontSize: "10px",
+                fontWeight: 700,
+                padding: "3px 9px",
+                borderRadius: "6px",
+                letterSpacing: "0.6px",
+                textTransform: "uppercase",
+                background: scopeBadge.bg,
+                color: scopeBadge.color,
+                border: scopeBadge.border,
+                flexShrink: 0,
+              }}
+            >
+              {agent.scope}
             </span>
 
             {/* Name */}
@@ -122,7 +152,7 @@ export function SubAgentCard({ agent }: { agent: SubAgent }) {
 
             {/* Open button */}
             <button
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); vscode.postMessage({ command: "openFile", filePath: agent.filePath }); }}
               style={{
                 flexShrink: 0,
                 fontFamily: "monospace",
