@@ -36,7 +36,6 @@ export class ClaudeLogWatcher {
     private readNewLines() {
         try {
             const stat = fs.statSync(this.filePath);
-            // If the file shrank (rotation/truncation), reset to start.
             if (stat.size < this.offset) {
                 this.offset = 0;
                 this.lineBuffer = '';

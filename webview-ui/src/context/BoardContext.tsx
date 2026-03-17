@@ -6,6 +6,7 @@ import type {
   ExtensionMessage,
   SessionStatus,
   ArchivedSession,
+  AgentInfo,
 } from "../messageProtocol";
 
 const COLOR_PALETTE = [
@@ -508,6 +509,7 @@ function reducer(state: BoardState, action: Action): BoardState {
 interface BoardContextValue {
   state: BoardState;
   archivedSessions: ArchivedSession[];
+  subAgents: AgentInfo[];
   moveCard: (
     cardId: string,
     fromListId: string,
@@ -535,6 +537,7 @@ const BoardContext = createContext<BoardContextValue | null>(null);
 export function BoardProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, empty);
   const [archivedSessions, setArchivedSessions] = useState<ArchivedSession[]>([]);
+  const [subAgents, setSubAgents] = useState<AgentInfo[]>([]);
 
   useEffect(() => {
     vscode.postMessage({ command: "ready" });
@@ -548,6 +551,9 @@ export function BoardProvider({ children }: { children: ReactNode }) {
         });
       } else if (msg.command === "archivedSessionsUpdate") {
         setArchivedSessions(msg.sessions);
+      } else if (msg.command === 'agentsUpdate') {
+        console.log("[BoardContext] agentsUpdate", msg.agents);
+        setSubAgents(msg.agents);
       }
     };
     window.addEventListener("message", handler);
@@ -648,6 +654,7 @@ export function BoardProvider({ children }: { children: ReactNode }) {
       value={{
         state,
         archivedSessions,
+        subAgents,
         moveCard,
         moveList,
         renameCard,

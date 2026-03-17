@@ -16,9 +16,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     claudeDriver.installHooks?.();
 
+    const projectRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+
+
     const sessionManager = new SessionManager();
     const cohortManager = new CohortManager();
-    const boardProvider = new BoardViewProvider(context, sessionManager, cohortManager, registry);
+    const boardProvider = new BoardViewProvider(context, sessionManager, cohortManager, registry, projectRoot);
 
     const hookServer = new HookServer((event) => {
         handleHookEvent(event, sessionManager);

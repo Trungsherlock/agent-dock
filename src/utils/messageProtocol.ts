@@ -1,5 +1,6 @@
 import { SessionStatus, ToolCall } from '../models/session';
 import { type ArchivedSession } from '../constants';
+import type { AgentInfo } from '../services/AgentScanner';
 
 export interface SerializedSession {
     id: string;
@@ -31,7 +32,8 @@ export interface SerializedCohort {
 
 export type ExtensionMessage =
     | { command: 'stateUpdate'; sessions: SerializedSession[], cohorts: SerializedCohort[] }
-    | { command: 'archivedSessionsUpdate'; sessions: ArchivedSession[] };
+    | { command: 'archivedSessionsUpdate'; sessions: ArchivedSession[] }
+    | { command: 'agentsUpdate'; agents: AgentInfo[] };
 
 export type WebviewMessage = 
     | { command: 'ready' }

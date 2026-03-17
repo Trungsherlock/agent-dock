@@ -72,7 +72,19 @@ export function Card({ card, index, onClick }: CardProps) {
   const [, setTick] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [compact, setCompact] = useState(false);
   const runStartedAt = useRef<number>(0);
+  const innerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = innerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setCompact(entry.contentRect.width < 180);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const isActive = card.status === "running" || card.status === "thinking";
 
@@ -122,6 +134,7 @@ export function Card({ card, index, onClick }: CardProps) {
           }}
         >
           <div
+            ref={innerRef}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             style={{
@@ -160,39 +173,40 @@ export function Card({ card, index, onClick }: CardProps) {
             <div
               onClick={() => focusSession(card.id)}
               style={{
-                padding: "14px 14px 12px 18px",
+                padding: compact ? "10px 10px 10px 16px" : "14px 14px 12px 18px",
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
               }}
             >
-              {/* Top row: badge + name + open button */}
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
-              >
-                <span
-                  style={{
-                    fontFamily: "monospace",
-                    fontSize: "9px",
-                    fontWeight: 700,
-                    padding: "2px 8px",
-                    borderRadius: "5px",
-                    letterSpacing: "0.5px",
-                    textTransform: "uppercase",
-                    background: frameworkBadge.bg,
-                    color: frameworkBadge.color,
-                    border: frameworkBadge.border,
-                    flexShrink: 0,
-                  }}
-                >
-                  {card.framework}
-                </span>
+              {/* Top row: badge + name + (compact: status | full: open button) */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {!compact && (
+                  <span
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "9px",
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: "5px",
+                      letterSpacing: "0.5px",
+                      textTransform: "uppercase",
+                      background: frameworkBadge.bg,
+                      color: frameworkBadge.color,
+                      border: frameworkBadge.border,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {card.framework}
+                  </span>
+                )}
                 <span
                   style={{
                     fontSize: "13px",
                     fontWeight: 600,
                     color: "#dde1f0",
                     flex: 1,
+                    minWidth: 0,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -201,50 +215,77 @@ export function Card({ card, index, onClick }: CardProps) {
                 >
                   {card.name}
                 </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onClick();
-                  }}
-                  title="Open terminal"
-                  style={{
-                    fontSize: "12px",
-                    width: "26px",
-                    height: "26px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "8px",
-                    background: "rgba(255,255,255,0.05)",
-                    color: "#8891a8",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                    transition: "all 0.15s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-                    e.currentTarget.style.color = "#c0c8e0";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                    e.currentTarget.style.color = "#8891a8";
-                  }}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="20px"
-                    viewBox="0 -960 960 960"
-                    width="20px"
-                    fill="#FFFFFF"
+
+                {compact ? (
+                  /* Compact: inline status badge */
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      padding: "2px 6px 2px 5px",
+                      borderRadius: "99px",
+                      background: card.hasTerminal ? statusStyle.bg : "rgba(107,122,150,0.08)",
+                      border: `1px solid ${card.hasTerminal ? statusStyle.color : "#6b7a96"}30`,
+                    }}
                   >
-                    <path d="M480-120 156-300v-360l324-180 324 180v360L480-120ZM376-579q20-21 47.5-33t56.5-12q29 0 56.5 12t47.5 33l109-60-213-118-213 118 109 60Zm68 357v-118q-48-12-78-51t-30-89q0-9 .5-18.5T341-516l-113-63v237l216 120Zm87-207q21-21 21-51t-21-51q-21-21-51-21t-51 21q-21 21-21 51t21 51q21 21 51 21t51-21Zm-15 207 216-120v-237l-113 63q3 8 4 17.5t1 18.5q0 50-30 89t-78 51v118Z" />
-                  </svg>
-                </button>
+                    <span
+                      className={isActive ? `${dotClass} status-dot-active` : dotClass}
+                      style={{
+                        width: "5px",
+                        height: "5px",
+                        borderRadius: "50%",
+                        backgroundColor: card.hasTerminal ? statusStyle.color : "#6b7a96",
+                        display: "inline-block",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span style={{ color: card.hasTerminal ? statusStyle.color : "#6b7a96", fontSize: "9px", fontWeight: 600 }}>
+                      {card.hasTerminal ? statusStyle.label : "offline"}
+                    </span>
+                  </span>
+                ) : (
+                  /* Full: open button */
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClick();
+                    }}
+                    title="Open terminal"
+                    style={{
+                      fontSize: "12px",
+                      width: "26px",
+                      height: "26px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "8px",
+                      background: "rgba(255,255,255,0.05)",
+                      color: "#8891a8",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      cursor: "pointer",
+                      flexShrink: 0,
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                      e.currentTarget.style.color = "#c0c8e0";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                      e.currentTarget.style.color = "#8891a8";
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#FFFFFF">
+                      <path d="M480-120 156-300v-360l324-180 324 180v360L480-120ZM376-579q20-21 47.5-33t56.5-12q29 0 56.5 12t47.5 33l109-60-213-118-213 118 109 60Zm68 357v-118q-48-12-78-51t-30-89q0-9 .5-18.5T341-516l-113-63v237l216 120Zm87-207q21-21 21-51t-21-51q-21-21-51-21t-51 21q-21 21-21 51t21 51q21 21 51 21t51-21Zm-15 207 216-120v-237l-113 63q3 8 4 17.5t1 18.5q0 50-30 89t-78 51v118Z" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
-              {/* Status row */}
-              <div
+              {/* Status row — hidden in compact mode */}
+              {!compact && <div
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -303,10 +344,10 @@ export function Card({ card, index, onClick }: CardProps) {
                     </button>
                   </>
                 )}
-              </div>
+              </div>}
 
-              {/* Live tool action */}
-              {card.currentTool && (
+              {/* Live tool action — hidden in compact mode */}
+              {!compact && card.currentTool && (
                 <div
                   style={{
                     fontFamily: "monospace",
@@ -368,8 +409,8 @@ export function Card({ card, index, onClick }: CardProps) {
                 </div>
               )}
 
-              {/* Context bar */}
-              {contextPct > 0 && (
+              {/* Context bar — hidden in compact mode */}
+              {!compact && contextPct > 0 && (
                 <div
                   style={{
                     display: "flex",
@@ -443,7 +484,7 @@ export function Card({ card, index, onClick }: CardProps) {
               )} */}
 
               {/* Tool calls (expanded) */}
-              {expanded && recentTools.length > 0 && (
+              {!compact && expanded && recentTools.length > 0 && (
                 <div
                   style={{
                     padding: "8px",
@@ -525,7 +566,7 @@ export function Card({ card, index, onClick }: CardProps) {
               )}
 
               {/* Files touched (expanded) */}
-              {expanded && card.filesTouched.length > 0 && (
+              {!compact && expanded && card.filesTouched.length > 0 && (
                 <div
                   style={{
                     padding: "8px",
@@ -577,8 +618,8 @@ export function Card({ card, index, onClick }: CardProps) {
                 </div>
               )}
 
-              {/* Expand toggle */}
-              {hasTools && (
+              {/* Expand toggle — hidden in compact mode */}
+              {!compact && hasTools && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

@@ -42,9 +42,20 @@ export interface ArchivedSession {
     createdAt: string;
 }
 
+export interface AgentInfo {
+    name: string;
+    description: string;
+    model: string;
+    tools: string[];
+    skills: string[];
+    scope: 'global' | 'project';
+    filePath: string;
+}
+
 export type ExtensionMessage =
     | { command: 'stateUpdate'; sessions: SerializedSession[]; cohorts: SerializedCohort[] }
-    | { command: 'archivedSessionsUpdate'; sessions: ArchivedSession[] };
+    | { command: 'archivedSessionsUpdate'; sessions: ArchivedSession[] }
+    | { command: 'agentsUpdate'; agents: AgentInfo[] };
 
 export type WebviewMessage =
     | { command: 'ready' }

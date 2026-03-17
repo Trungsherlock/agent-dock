@@ -6,19 +6,24 @@ import { CohortManager } from '../managers/cohortManager';
 import { serializeSession, WebviewMessage, ExtensionMessage } from '../utils/messageProtocol';
 import { MessageHandler } from './messageHandler';
 import { AgentRegistry } from '../agents/AgentRegistry';
+import { AgentScanner } from '../services/AgentScanner';
 
 export class BoardViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'agentdock.boardView';
     private _view?: vscode.WebviewView;
     private _panelWebviews = new Set<vscode.Webview>();
     private _messageHandler: MessageHandler;
+    private readonly _agentScanner = new AgentScanner();
+    private _projectRoot: string = '';
 
     constructor(
         private readonly _context: vscode.ExtensionContext,
         private readonly _sessionManager: SessionManager,
         private readonly _cohortManager: CohortManager,
         registry: AgentRegistry,
+        projectRoot: string = '',
     ) {
+        this._projectRoot = projectRoot;
         this._messageHandler = new MessageHandler(
             _context,
             _sessionManager,
@@ -26,6 +31,7 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
             (msg) => this._view?.webview.postMessage(msg),
             () => this._postStateUpdate(),
             registry,
+            () => this.postAgentsUpdate(),
         );
     }
 
@@ -54,6 +60,17 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
         this._sessionManager.onDidChange(() => this._postStateUpdate());
         this._cohortManager.onDidChange(() => this._postStateUpdate());
 
+        this.postAgentsUpdate();
+        if(this._projectRoot) {
+            const watcher = vscode.workspace.createFileSystemWatcher(
+                new vscode.RelativePattern(this._projectRoot, '.claude/agents/*.md')
+            );
+            watcher.onDidCreate(() => this.postAgentsUpdate());
+            watcher.onDidChange(() => this.postAgentsUpdate());
+            watcher.onDidDelete(() => this.postAgentsUpdate());
+            this._context.subscriptions.push(watcher);
+        }
+
         vscode.window.onDidChangeActiveTerminal((terminal) => {
             if (!terminal) { return; }
             const session = this._sessionManager.getAll().find(s => s.terminal === terminal);
@@ -67,12 +84,20 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
             for (const session of this._sessionManager.getAll()) {
                 if (!session.terminal) { continue; }
                 if (session.terminal.name === session.name) { continue; }
-                // Skip if the terminal is still at its original creation name — not user-renamed.
-                // After VS Code reload, terminal.name always returns the creation name.
                 this._sessionManager.rename(session.id, session.terminal.name);
             }
         }, 500);
         this._context.subscriptions.push({ dispose: () => clearInterval(pollInterval) });
+    }
+
+    public async postAgentsUpdate(): Promise<void> {
+        const agents = await this._agentScanner.scanAll(this._projectRoot);
+        console.log('[BoardViewProvider] postAgentsUpdate', agents.length, agents);
+        const msg: ExtensionMessage = { command: 'agentsUpdate', agents };
+        this._view?.webview.postMessage(msg);
+        for (const wv of this._panelWebviews) {
+            wv.postMessage(msg);
+        }
     }
 
     public postStateUpdate(): void {
@@ -140,8 +165,5 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
         return html;
     }
 
-    dispose() {
-        // Do NOT dispose terminals here — they belong to the user, not the extension.
-        // VS Code manages terminal lifecycle independently.
-    }
+    dispose() {}
 }

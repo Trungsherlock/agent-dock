@@ -5,7 +5,7 @@ import { SkillScanner } from '../services/SkillScanner';
 import { AgentWriter, AgentConfig } from '../services/AgentWriter';
 
 export type AddAgentExtensionMessage =
-    | { command: 'initData'; skills: import('../services/SkillScanner').SkillInfo[]; projectName: string }
+    | { command: 'initData'; skills: import('../services/SkillScanner').SkillInfo[]; projectName: string; scope: 'global' | 'project' }
     | { command: 'createError'; message: string };
 
 export type AddAgentWebviewMessage =
@@ -79,10 +79,12 @@ export class AddAgentPanel {
 
     private async _sendInitData(): Promise<void> {
         const skills = await this._skillScanner.scanAll(this._projectRoot);
+        const scope: 'global' | 'project' = this._cohortId === 'global' ? 'global' : 'project';
         this._panel.webview.postMessage({
             command: 'initData',
             skills,
             projectName: this._projectName,
+            scope,
         } satisfies AddAgentExtensionMessage);
     }
 
