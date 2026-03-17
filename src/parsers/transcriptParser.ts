@@ -28,6 +28,16 @@ interface ClaudeEntry {
     };
 }
 
+const INJECTED_INTERRUPTION = '[Request interrupted by user for tool use]';
+
+function isSystemInjectedMessage(entry: ClaudeEntry): boolean {
+    const content = entry.message?.content;
+    if (!Array.isArray(content)) { return false; }
+    return content.length === 1 &&
+        content[0].type === 'text' &&
+        content[0].text === INJECTED_INTERRUPTION;
+}
+
 function isHumanTurn(entry: ClaudeEntry): boolean {
     const content = entry.message?.content;
     if (typeof content === 'string') { return true; }
@@ -45,17 +55,25 @@ export function processTranscriptLine(
     try { entry = JSON.parse(raw); } catch { return false; }
 
     if (entry.type === 'system' && entry.subtype === 'stop_hook_summary') {
+        sessionManager.setPermissionRequest(sessionId, false);
         sessionManager.updateMetrics(sessionId, { status: 'idle' });
+        sessionManager.setCurrentTool(sessionId, undefined);
         return true;
     }
 
     if (entry.type === 'user') {
-        if (!skipStatus && isHumanTurn(entry)) {
-            sessionManager.updateMetrics(sessionId, { status: 'thinking' });
-            sessionManager.setCurrentTool(sessionId, undefined);
-        } else if (!skipStatus) {
-            // Tool result: tool just completed, clear currentTool
-            sessionManager.setCurrentTool(sessionId, undefined);
+        if (!skipStatus) {
+            if (isSystemInjectedMessage(entry)) {
+                // e.g. "[Request interrupted by user for tool use]" — no Stop hook fires after this
+                sessionManager.setPermissionRequest(sessionId, false);
+                sessionManager.setCurrentTool(sessionId, undefined);
+                sessionManager.updateMetrics(sessionId, { status: 'idle' });
+            } else if (isHumanTurn(entry)) {
+                sessionManager.updateMetrics(sessionId, { status: 'thinking' });
+                sessionManager.setCurrentTool(sessionId, undefined);
+            } else {
+                sessionManager.setPermissionRequest(sessionId, false);
+            }
         }
         return true;
     }
