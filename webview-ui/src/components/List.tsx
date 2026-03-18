@@ -430,7 +430,7 @@ export function List({ list, innerRef, draggableProps, dragHandleProps }: ListPr
         </div>}
       </div>
 
-      {openCard && (
+      {openCard && !compact && (
         <CardModal
           card={openCard}
           list={list}

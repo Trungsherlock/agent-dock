@@ -5,7 +5,7 @@ import { CohortManager } from '../managers/cohortManager';
 import { WebviewMessage } from '../utils/messageProtocol';
 import { getArchivedSessions } from '../managers/sessionLoader';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
-import { NAMES_KEY, SKILLS_KEY } from '../constants';
+import { NAMES_KEY, NOTES_KEY, SKILLS_KEY } from '../constants';
 import { AddAgentPanel } from '../panels/AddAgentPanel';
 import { AgentRegistry } from '../agents/AgentRegistry';
 
@@ -125,7 +125,8 @@ export class MessageHandler {
                 const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
                 const nameMap = this._context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
                 const skillsMap = this._context.workspaceState.get<Record<string, string[]>>(SKILLS_KEY, {});
-                const sessions = getArchivedSessions(this._sessionManager, workspacePath, nameMap, skillsMap);
+                const notesMap = this._context.workspaceState.get<Record<string, string>>(NOTES_KEY, {});
+                const sessions = getArchivedSessions(this._sessionManager, workspacePath, nameMap, skillsMap, notesMap);
                 this._postMessage({ command: 'archivedSessionsUpdate', sessions });
                 break;
             }
@@ -160,7 +161,8 @@ export class MessageHandler {
                 const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
                 const nameMap = this._context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
                 const skillsMap = this._context.workspaceState.get<Record<string, string[]>>(SKILLS_KEY, {});
-                const archived = getArchivedSessions(this._sessionManager, workspacePath, nameMap, skillsMap);
+                const notesMap = this._context.workspaceState.get<Record<string, string>>(NOTES_KEY, {});
+                const archived = getArchivedSessions(this._sessionManager, workspacePath, nameMap, skillsMap, notesMap);
                 const found = archived.find(a => a.id === message.sessionId);
                 if (!found) { break; }
                 if (this._sessionManager.getById(found.id)) { break; }
@@ -168,6 +170,7 @@ export class MessageHandler {
                 this._sessionManager.setClaudeLogFile(session.id, found.claudeLogFile);
                 this._sessionManager.setStatus(session.id, 'idle');
                 if (found.skills?.length) { this._sessionManager.setSkills(session.id, found.skills); }
+                if (found.note) { this._sessionManager.setNote(session.id, found.note); }
                 const terminal = vscode.window.createTerminal({
                     name: found.name,
                     cwd: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
