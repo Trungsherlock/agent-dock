@@ -3,6 +3,7 @@ export const COHORTS_KEY = 'agentdock.cohorts';
 export const CLAUDE_CODE_AGENT_PREFIX = 'Claude Code';
 export const NAMES_KEY = 'agentdock.sessionNames';
 export const SKILLS_KEY = 'agentdock.sessionSkills';
+export const NOTES_KEY = 'agentdock.sessionNotes';
 
 export interface PersistedSession {
     id: string;
@@ -20,4 +21,5 @@ export interface ArchivedSession {
     claudeLogFile: string;
     createdAt: string;
     skills?: string[];
+    note?: string;
 }

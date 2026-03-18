@@ -30,13 +30,13 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const confirmRename = () => {
+  const handleSave = () => {
     const trimmed = name.trim();
     if (trimmed && trimmed !== card.name) renameCard(card.id, trimmed);
     else setName(card.name);
+    if (note !== card.note) setNote(card.id, note);
+    onClose();
   };
-
-  const commitNote = () => { if (note !== card.note) setNote(card.id, note); };
 
   const { label, color, bg } = STATUS_MAP[card.status] ?? STATUS_MAP.idle;
 
@@ -149,7 +149,6 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") confirmRename();
                 if (e.key === "Escape") setName(card.name);
               }}
               style={{
@@ -173,33 +172,6 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
                 e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
               }}
             />
-            {name.trim() !== card.name && name.trim() !== "" && (
-              <button
-                onClick={confirmRename}
-                title="Confirm rename"
-                style={{
-                  flexShrink: 0,
-                  padding: "8px 12px",
-                  borderRadius: "8px",
-                  background: "rgba(0,212,170,0.12)",
-                  border: "1px solid rgba(0,212,170,0.3)",
-                  color: "#00d4aa",
-                  cursor: "pointer",
-                  fontFamily: "monospace",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(0,212,170,0.22)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(0,212,170,0.12)";
-                }}
-              >
-                ✓
-              </button>
-            )}
           </div>
 
           {/* Status toggle */}
@@ -274,7 +246,6 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
               }}
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-                commitNote();
               }}
             />
           </div>
@@ -312,6 +283,37 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
             >
               <Terminal size={12} />
               Focus Terminal
+            </button>
+            <button
+              onClick={handleSave}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                background: "rgba(0,212,170,0.12)",
+                border: "1px solid rgba(0,212,170,0.3)",
+                color: "#00d4aa",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(0,212,170,0.22)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(0,212,170,0.12)";
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="24px"
+                viewBox="0 -960 960 960"
+                width="24px"
+                fill="#FFFFFF"
+              >
+                <path d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM565-275q35-35 35-85t-35-85q-35-35-85-35t-85 35q-35 35-35 85t35 85q35 35 85 35t85-35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z" />
+              </svg>
             </button>
             <button
               onClick={() => {

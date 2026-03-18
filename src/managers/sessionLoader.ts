@@ -5,7 +5,7 @@ import { SessionManager } from './sessionManager';
 import { CohortManager, type Cohort } from './cohortManager';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
 import { getAllClaudeLogFiles, isConversationFile } from '../claudeWatcher';
-import { SESSIONS_KEY, COHORTS_KEY, NAMES_KEY, SKILLS_KEY, type PersistedSession, type ArchivedSession } from '../constants';
+import { SESSIONS_KEY, COHORTS_KEY, NAMES_KEY, SKILLS_KEY, type PersistedSession, type ArchivedSession, NOTES_KEY } from '../constants';
 
 export function loadSessions(
     context: vscode.ExtensionContext,
@@ -66,12 +66,15 @@ export function setupPersistence(
 
             const existingName = context.workspaceState.get<Record<string, string>>(NAMES_KEY, {});
             const existingSkills = context.workspaceState.get<Record<string, string[]>>(SKILLS_KEY, {});
+            const existingNotes = context.workspaceState.get<Record<string, string>>(NOTES_KEY, {});
             for (const s of sessionManager.getAll()) {
                 existingName[s.id] = s.name;
                 if (s.skills?.length) { existingSkills[s.id] = s.skills; }
+                if (s.note) { existingNotes[s.id] = s.note; }
             }
             context.workspaceState.update(NAMES_KEY, existingName);
             context.workspaceState.update(SKILLS_KEY, existingSkills);
+            context.workspaceState.update(NOTES_KEY, existingNotes);
         })
     );
     context.subscriptions.push(
@@ -105,6 +108,7 @@ export function getArchivedSessions(
     workspacePath?: string,
     nameMap: Record<string, string> = {},
     skillsMap: Record<string, string[]> = {},
+    notesMap: Record<string, string> = {},
 ): ArchivedSession[] {
     let archiveSessions: ArchivedSession[] = [];
     for (const filePath of workspacePath ? getAllClaudeLogFiles(workspacePath) : []) {
@@ -114,7 +118,8 @@ export function getArchivedSessions(
         const name = nameMap[id] ?? id.slice(0, 8);
         const birthtime = fs.statSync(filePath).birthtime.toISOString();
         const skills = skillsMap[id];
-        archiveSessions.push({id, name, claudeLogFile: filePath, createdAt: birthtime, ...(skills?.length ? { skills } : {})});
+        const note = notesMap[id];
+        archiveSessions.push({id, name, claudeLogFile: filePath, createdAt: birthtime, ...(skills?.length ? { skills } : {}), ...(note ? { note } : {}) });
     }
     return archiveSessions;
 }
