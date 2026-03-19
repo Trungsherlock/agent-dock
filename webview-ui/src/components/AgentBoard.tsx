@@ -4,7 +4,7 @@ import { SubAgentTab } from "./SubAgentTab";
 
 type Tab = "agents" | "subagents";
 
-export function Board() {
+export function AgentBoard() {
   const [activeTab, setActiveTab] = useState<Tab>("agents");
 
   const tabs: { id: Tab; label: string }[] = [

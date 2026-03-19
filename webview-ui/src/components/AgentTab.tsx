@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { useBoardContext } from "../context/useBoardContext";
-import { List } from "./List";
+import { List } from "./AgentList";
 
 export function AgentTab({ visible }: { visible: boolean }) {
   const { state, moveCard, moveList, createCohort } = useBoardContext();

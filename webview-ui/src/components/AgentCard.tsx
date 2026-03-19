@@ -4,7 +4,7 @@ import type { BoardCard, BoardList } from "../context/BoardContext";
 import { useBoardContext } from "../context/useBoardContext";
 import vscode from "../vscodeApi";
 
-interface CardProps {
+interface AgentCardProps {
   card: BoardCard;
   list: BoardList;
   index: number;
@@ -67,7 +67,7 @@ function extractPathFromInput(input: string): string {
   }
 }
 
-export function Card({ card, index, onClick }: CardProps) {
+export function AgentCard({ card, index, onClick }: AgentCardProps) {
   const { focusSession, resumeSession } = useBoardContext();
   const [, setTick] = useState(0);
   const [expanded, setExpanded] = useState(false);

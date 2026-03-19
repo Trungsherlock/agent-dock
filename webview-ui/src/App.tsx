@@ -1,5 +1,5 @@
 import { BoardProvider } from "./context/BoardContext";
-import { Board } from "./components/Board";
+import { AgentBoard } from "./components/AgentBoard";
 
 export default function App() {
   return (
@@ -8,7 +8,7 @@ export default function App() {
         className="w-full h-full overflow-hidden"
         style={{ fontFamily: "var(--vscode-font-family)" }}
       >
-        <Board />
+        <AgentBoard />
       </div>
     </BoardProvider>
   );

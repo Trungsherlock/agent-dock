@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { Droppable, type DraggableProvidedDraggableProps, type DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 import { useBoardContext } from "../context/useBoardContext";
 import type { BoardList } from "../context/BoardContext";
-import { Card } from "./Card";
-import { CardModal } from "./CardModal";
+import { AgentCard } from "./AgentCard";
+import { AgentCardModal } from "./AgentCardModal";
 
 interface ListProps {
   list: BoardList;
@@ -72,7 +72,10 @@ export function List({ list, innerRef, draggableProps, dragHandleProps }: ListPr
   return (
     <>
       <div
-        ref={(el) => { containerRef.current = el; innerRef?.(el); }}
+        ref={(el) => {
+          containerRef.current = el;
+          innerRef?.(el);
+        }}
         {...draggableProps}
         className="flex flex-col w-full"
         style={{
@@ -86,7 +89,9 @@ export function List({ list, innerRef, draggableProps, dragHandleProps }: ListPr
         <div
           className="flex items-center gap-2 px-4 py-3"
           style={{
-            borderBottom: collapsed ? "none" : "1px solid rgba(255,255,255,0.06)",
+            borderBottom: collapsed
+              ? "none"
+              : "1px solid rgba(255,255,255,0.06)",
             background: "rgba(255,255,255,0.02)",
             borderRadius: collapsed ? "14px" : "14px 14px 0 0",
           }}
@@ -94,12 +99,27 @@ export function List({ list, innerRef, draggableProps, dragHandleProps }: ListPr
           {/* Drag handle */}
           <div
             {...(dragHandleProps ?? {})}
-            style={{ display: "flex", alignItems: "center", color: "#4e5a72", cursor: "grab", flexShrink: 0 }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              color: "#4e5a72",
+              cursor: "grab",
+              flexShrink: 0,
+            }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
-              <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
-              <circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <circle cx="9" cy="5" r="1.5" />
+              <circle cx="15" cy="5" r="1.5" />
+              <circle cx="9" cy="12" r="1.5" />
+              <circle cx="15" cy="12" r="1.5" />
+              <circle cx="9" cy="19" r="1.5" />
+              <circle cx="15" cy="19" r="1.5" />
             </svg>
           </div>
           {/* Color dot */}
@@ -224,214 +244,233 @@ export function List({ list, innerRef, draggableProps, dragHandleProps }: ListPr
               transition: "all 0.15s ease",
               flexShrink: 0,
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "#a0aec8"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7a96"; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#a0aec8";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "#6b7a96";
+            }}
             title={collapsed ? "Expand" : "Collapse"}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"
-              style={{ transform: collapsed ? "rotate(-90deg)" : "none", transition: "transform 0.2s ease" }}>
-              <path d="M480-360 280-560h400L480-360Z"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="16px"
+              viewBox="0 -960 960 960"
+              width="16px"
+              fill="currentColor"
+              style={{
+                transform: collapsed ? "rotate(-90deg)" : "none",
+                transition: "transform 0.2s ease",
+              }}
+            >
+              <path d="M480-360 280-560h400L480-360Z" />
             </svg>
           </button>
         </div>
 
         {/* Cards */}
-        {!collapsed && <Droppable droppableId={list.id} key={list.id}>
-          {(provided, snapshot) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              style={{
-                minHeight: "40px",
-                backgroundColor: snapshot.isDraggingOver
-                  ? list.color + "0d"
-                  : "transparent",
-                transition: "background-color 0.15s ease",
-                padding: snapshot.isDraggingOver ? "2px 0" : undefined,
-              }}
-            >
-              {cards.length === 0 && !snapshot.isDraggingOver && (
-                <div
-                  style={{
-                    fontSize: "11px",
-                    textAlign: "center",
-                    padding: "20px 12px",
-                    color: "#4e5a72",
-                    fontStyle: "italic",
-                  }}
-                >
-                  No agents here
-                </div>
-              )}
-              {cards.map((card, index) => (
-                <Card
-                  key={card.id}
-                  card={card}
-                  list={list}
-                  index={index}
-                  onClick={() => setOpenCardId(card.id)}
-                />
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>}
-
-        {/* Footer */}
-        {!collapsed &&
-        <div
-          className="relative flex items-center px-4 py-2.5"
-          style={{
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-            background: "rgba(255,255,255,0.015)",
-            borderRadius: "0 0 14px 14px",
-          }}
-          ref={menuRef}
-        >
-          <button
-            onClick={() => { setShowAddMenu((v) => !v); setShowArchived(false); }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontFamily: "monospace",
-              fontSize: "11px",
-              color: showAddMenu ? "#a0aec8" : "#7b8aa8",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-              transition: "color 0.15s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#a0aec8";
-            }}
-            onMouseLeave={(e) => {
-              if (!showAddMenu) e.currentTarget.style.color = "#7b8aa8";
-            }}
-          >
-            <span
-              style={{
-                fontSize: "16px",
-                lineHeight: 1,
-                color: showAddMenu ? "#a0aec8" : "#6b7a96",
-                fontWeight: 300,
-              }}
-            >
-              +
-            </span>
-            <span>Add agent</span>
-          </button>
-
-          {showAddMenu && (
-            <div
-              className="absolute top-full left-0 mt-2 z-10"
-              style={{
-                backgroundColor: "#1a2035",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "10px",
-                overflow: "hidden",
-                minWidth: "170px",
-                maxHeight: "160px",
-                overflowY: "auto",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-              }}
-            >
-              {!showArchived ? (
-                <>
-                  <button
-                    className="w-full text-left transition-colors hover:bg-white/5"
-                    style={{
-                      fontFamily: "monospace",
-                      fontSize: "11px",
-                      color: "#9aa8c4",
-                      padding: "9px 14px",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      display: "block",
-                    }}
-                    onClick={() => {
-                      fetchArchivedSessions();
-                      setShowArchived(true);
-                    }}
-                  >
-                    Existing agent
-                  </button>
+        {!collapsed && (
+          <Droppable droppableId={list.id} key={list.id}>
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                style={{
+                  minHeight: "40px",
+                  backgroundColor: snapshot.isDraggingOver
+                    ? list.color + "0d"
+                    : "transparent",
+                  transition: "background-color 0.15s ease",
+                  padding: snapshot.isDraggingOver ? "2px 0" : undefined,
+                }}
+              >
+                {cards.length === 0 && !snapshot.isDraggingOver && (
                   <div
                     style={{
-                      height: "1px",
-                      background: "rgba(255,255,255,0.06)",
-                      margin: "0 10px",
+                      fontSize: "11px",
+                      textAlign: "center",
+                      padding: "20px 12px",
+                      color: "#4e5a72",
+                      fontStyle: "italic",
                     }}
+                  >
+                    No agents here
+                  </div>
+                )}
+                {cards.map((card, index) => (
+                  <AgentCard
+                    key={card.id}
+                    card={card}
+                    list={list}
+                    index={index}
+                    onClick={() => setOpenCardId(card.id)}
                   />
-                  <button
-                    className="w-full text-left transition-colors hover:bg-white/5"
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        )}
+
+        {/* Footer */}
+        {!collapsed && (
+          <div
+            className="relative flex items-center px-4 py-2.5"
+            style={{
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+              background: "rgba(255,255,255,0.015)",
+              borderRadius: "0 0 14px 14px",
+            }}
+            ref={menuRef}
+          >
+            <button
+              onClick={() => {
+                setShowAddMenu((v) => !v);
+                setShowArchived(false);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontFamily: "monospace",
+                fontSize: "11px",
+                color: showAddMenu ? "#a0aec8" : "#7b8aa8",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                transition: "color 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#a0aec8";
+              }}
+              onMouseLeave={(e) => {
+                if (!showAddMenu) e.currentTarget.style.color = "#7b8aa8";
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "16px",
+                  lineHeight: 1,
+                  color: showAddMenu ? "#a0aec8" : "#6b7a96",
+                  fontWeight: 300,
+                }}
+              >
+                +
+              </span>
+              <span>Add agent</span>
+            </button>
+
+            {showAddMenu && (
+              <div
+                className="absolute top-full left-0 mt-2 z-10"
+                style={{
+                  backgroundColor: "#1a2035",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "10px",
+                  overflow: "hidden",
+                  minWidth: "170px",
+                  maxHeight: "160px",
+                  overflowY: "auto",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                }}
+              >
+                {!showArchived ? (
+                  <>
+                    <button
+                      className="w-full text-left transition-colors hover:bg-white/5"
+                      style={{
+                        fontFamily: "monospace",
+                        fontSize: "11px",
+                        color: "#9aa8c4",
+                        padding: "9px 14px",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        display: "block",
+                      }}
+                      onClick={() => {
+                        fetchArchivedSessions();
+                        setShowArchived(true);
+                      }}
+                    >
+                      Existing agent
+                    </button>
+                    <div
+                      style={{
+                        height: "1px",
+                        background: "rgba(255,255,255,0.06)",
+                        margin: "0 10px",
+                      }}
+                    />
+                    <button
+                      className="w-full text-left transition-colors hover:bg-white/5"
+                      style={{
+                        fontFamily: "monospace",
+                        fontSize: "11px",
+                        color: "#9aa8c4",
+                        padding: "9px 14px",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        display: "block",
+                      }}
+                      onClick={() => {
+                        newSession(list.id);
+                        setShowAddMenu(false);
+                      }}
+                    >
+                      New agent
+                    </button>
+                  </>
+                ) : archivedSessions.length === 0 ? (
+                  <div
                     style={{
                       fontFamily: "monospace",
                       fontSize: "11px",
-                      color: "#9aa8c4",
-                      padding: "9px 14px",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      display: "block",
-                    }}
-                    onClick={() => {
-                      newSession(list.id);
-                      setShowAddMenu(false);
+                      color: "#6b7a96",
+                      padding: "10px 14px",
                     }}
                   >
-                    New agent
-                  </button>
-                </>
-              ) : archivedSessions.length === 0 ? (
-                <div
-                  style={{
-                    fontFamily: "monospace",
-                    fontSize: "11px",
-                    color: "#6b7a96",
-                    padding: "10px 14px",
-                  }}
-                >
-                  No archived agents
-                </div>
-              ) : (
-                archivedSessions.map((s) => (
-                  <button
-                    key={s.id}
-                    className="w-full text-left transition-colors hover:bg-white/5"
-                    style={{
-                      fontFamily: "monospace",
-                      fontSize: "11px",
-                      color: "#9aa8c4",
-                      padding: "9px 14px",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      display: "block",
-                      width: "100%",
-                    }}
-                    onClick={() => {
-                      addExistingSession(s.id, list.id);
-                      setShowAddMenu(false);
-                      setShowArchived(false);
-                    }}
-                  >
-                    {s.name}
-                    <span style={{ color: "#6b7a96", marginLeft: "6px" }}>
-                      {new Date(s.createdAt).toLocaleDateString()}
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-        </div>}
+                    No archived agents
+                  </div>
+                ) : (
+                  archivedSessions.map((s) => (
+                    <button
+                      key={s.id}
+                      className="w-full text-left transition-colors hover:bg-white/5"
+                      style={{
+                        fontFamily: "monospace",
+                        fontSize: "11px",
+                        color: "#9aa8c4",
+                        padding: "9px 14px",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        display: "block",
+                        width: "100%",
+                      }}
+                      onClick={() => {
+                        addExistingSession(s.id, list.id);
+                        setShowAddMenu(false);
+                        setShowArchived(false);
+                      }}
+                    >
+                      {s.name}
+                      <span style={{ color: "#6b7a96", marginLeft: "6px" }}>
+                        {new Date(s.createdAt).toLocaleDateString()}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {openCard && !compact && (
-        <CardModal
+        <AgentCardModal
           card={openCard}
           list={list}
           onClose={() => setOpenCardId(null)}

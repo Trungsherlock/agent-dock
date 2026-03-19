@@ -11,13 +11,13 @@ const STATUS_MAP: Record<SessionStatus, { label: string; color: string; bg: stri
   error:    { label: "Error",    color: "#ff4d6a", bg: "rgba(255,77,106,0.1)"  },
 };
 
-interface CardModalProps {
+interface AgentCardModalProps {
   card: BoardCard;
   list: BoardList;
   onClose: () => void;
 }
 
-export function CardModal({ card, list, onClose }: CardModalProps) {
+export function AgentCardModal({ card, list, onClose }: AgentCardModalProps) {
   const { renameCard, setNote, endSession, focusSession } = useBoardContext();
 
   const [name, setName] = useState(card.name);
@@ -25,7 +25,9 @@ export function CardModal({ card, list, onClose }: CardModalProps) {
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);

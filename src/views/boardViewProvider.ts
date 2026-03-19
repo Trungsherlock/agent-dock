@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { SessionManager } from '../managers/sessionManager';
 import { CohortManager } from '../managers/cohortManager';
 import { serializeSession, WebviewMessage, ExtensionMessage } from '../utils/messageProtocol';
@@ -87,6 +88,18 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
                 this._sessionManager.rename(session.id, session.terminal.name);
             }
         }, 500);
+
+        // Watch global agents
+        const globalAgentsPath = path.join(os.homedir(), '.claude', 'agents');
+        const globalWatcher = vscode.workspace.createFileSystemWatcher(
+            new vscode.RelativePattern(vscode.Uri.file(globalAgentsPath), '**/*.md')
+        );
+        globalWatcher.onDidCreate(() => this.postAgentsUpdate());
+        globalWatcher.onDidDelete(() => this.postAgentsUpdate());
+        globalWatcher.onDidChange(() => this.postAgentsUpdate());
+        this._context.subscriptions.push(globalWatcher);
+
+
         this._context.subscriptions.push({ dispose: () => clearInterval(pollInterval) });
     }
 
