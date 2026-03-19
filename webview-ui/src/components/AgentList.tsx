@@ -168,9 +168,13 @@ export function List({ list, innerRef, draggableProps, dragHandleProps }: ListPr
                 textTransform: "uppercase",
                 color: "#b0bbd4",
                 cursor: isUncategorized ? "default" : "pointer",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                minWidth: 0,
               }}
               onDoubleClick={startEdit}
-              title={isUncategorized ? undefined : "Double-click to rename"}
+              title={list.title}
             >
               {list.title}
             </span>
@@ -194,7 +198,7 @@ export function List({ list, innerRef, draggableProps, dragHandleProps }: ListPr
             </span>
           )}
 
-          {!isUncategorized && (
+          {!isUncategorized && !compact && (
             <button
               onClick={handleDelete}
               style={{
