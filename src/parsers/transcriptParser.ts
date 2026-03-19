@@ -21,12 +21,19 @@ interface ContentBlock {
 interface ClaudeEntry {
     type: string;
     subtype?: string;
+    compactMetadata?: { trigger: string; preTokens: number };
     message?: {
         roles?: string;
         content?: string | ContentBlock[];
-        usage?: { input_tokens?: number; output_tokens?: number };
+        usage?: { 
+            input_tokens?: number; 
+            output_tokens?: number;
+            cache_creation_input_tokens?: number;
+            cache_read_input_tokens?: number; 
+        };
     };
 }
+
 
 const INJECTED_INTERRUPTION = '[Request interrupted by user for tool use]';
 
@@ -45,6 +52,11 @@ function isHumanTurn(entry: ClaudeEntry): boolean {
     return content.some(b => b.type === 'text');
 }
 
+function isLocalCommandOutput(entry: ClaudeEntry): boolean {
+    const content = entry.message?.content;
+    return typeof content === 'string' && content.trimStart().startsWith('<local-command-stdout>');
+}
+
 export function processTranscriptLine(
     raw: string,
     sessionId: string,
@@ -61,11 +73,19 @@ export function processTranscriptLine(
         return true;
     }
 
+    if (entry.type === 'system' && entry.subtype === 'compact_boundary') {
+        const preTokens = (entry as any).compactMetadata?.preTokens;
+        sessionManager.updateMetrics(sessionId, { contextWindowUsed: 0 });
+        return true;
+    }
+
     if (entry.type === 'user') {
         if (!skipStatus) {
             if (isSystemInjectedMessage(entry)) {
-                // e.g. "[Request interrupted by user for tool use]" — no Stop hook fires after this
                 sessionManager.setPermissionRequest(sessionId, false);
+                sessionManager.setCurrentTool(sessionId, undefined);
+                sessionManager.updateMetrics(sessionId, { status: 'idle' });
+            } else if (isLocalCommandOutput(entry)) {
                 sessionManager.setCurrentTool(sessionId, undefined);
                 sessionManager.updateMetrics(sessionId, { status: 'idle' });
             } else if (isHumanTurn(entry)) {
@@ -123,6 +143,8 @@ export function processTranscriptLine(
     const usage = entry.message?.usage;
     const addedInput = usage?.input_tokens ?? 0;
     const addedOutput = usage?.output_tokens ?? 0;
+    const cacheCreation = usage?.cache_creation_input_tokens ?? 0;
+    const cacheRead = usage?.cache_read_input_tokens ?? 0;
 
     const patch: Parameters<SessionManager['updateMetrics']>[1] = {};
     if (newToolCalls.length > 0 && !skipStatus) { patch.status = 'running'; }
@@ -130,12 +152,13 @@ export function processTranscriptLine(
     if (newToolCalls.length > 0) { patch.toolCalls = [...session.toolCalls, ...newToolCalls].slice(-50); }
     if (newFiles.length > 0) { patch.filesTouched = [...new Set([...session.filesTouched, ...newFiles])]; }
     if (addedInput > 0 || addedOutput > 0) {
-        patch.tokensInput = session.tokensInput + addedInput;
+        patch.tokensInput = addedInput + cacheCreation + cacheRead;
         patch.tokensOutput = session.tokensOutput + addedOutput;
-        patch.contextWindowUsed = session.contextWindowUsed + addedInput + addedOutput;
+        patch.contextWindowUsed = addedInput + cacheCreation + cacheRead;
     }
     if (Object.keys(patch).length > 0) {
         sessionManager.updateMetrics(sessionId, patch);
     }
+
     return false;
 }

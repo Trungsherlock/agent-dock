@@ -141,13 +141,20 @@ export class SessionManager {
     updateMetrics(id: string, patch: Partial<Pick<Session,
         'currentTask' | 'filesTouched' | 'toolCalls' |
         'tokensInput' | 'tokensOutput' | 'costUsd' |
-        'contextWindowUsed' | 'pid' | 'status'
+        'contextWindowUsed' | 'contextWindowMax' | 'pid' | 'status'
     >>): void {
         const session = this.getById(id);
         if (session) {
             Object.assign(session, patch, { updatedAt: new Date() });
             this._onDidChange.fire();
         }
+    }
+
+    updateAllContextWindows(max: number): void {
+        for (const session of this.sessions) {
+            session.contextWindowMax = max;
+        }
+        this._onDidChange.fire();
     }
 
     dispose(): void {

@@ -3,6 +3,7 @@ import * as path from 'path';
 import { SessionManager } from '../managers/sessionManager';
 import { ClaudeLogWatcher } from '../watchers/claudeLogWatcher';
 import { AgentRegistry } from '../agents/AgentRegistry';
+import { ClaudeDriver } from '../agents/ClaudeDriver';
 
 export function registerCommands(
     context: vscode.ExtensionContext,
@@ -53,6 +54,9 @@ export function registerCommands(
             const watcher = new ClaudeLogWatcher(session.id, filePath, sessionManager);
             context.subscriptions.push({ dispose: () => watcher.dispose() });
         });
+        if (driver.id === 'claude') {
+            (driver as ClaudeDriver).watchSettings(context, sessionManager);
+        }
     }
 
     context.subscriptions.push(
