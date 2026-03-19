@@ -2,7 +2,7 @@
   "name": "agentdock",
   "displayName": "AgentDock",
   "description": "Kanban-style board for managing AI coding agent terminal sessions",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "trungsherlock2002",
   "engines": {
     "vscode": "^1.109.0"
