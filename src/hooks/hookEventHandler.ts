@@ -8,13 +8,15 @@ function extractTarget(input?: Record<string, unknown>): string {
 }
 
 export function handleHookEvent(event: HookEvent, sessionManager: SessionManager): void {
-    console.log('[HookEvent] received:', event.hook_event_name, 'session:', event.session_id?.slice(0, 8));
     const session = sessionManager.getById(event.session_id);
     if (!session) { return; }
 
     switch (event.hook_event_name) {
         case 'PreToolUse':
             sessionManager.setStatus(event.session_id, 'running');
+            if (event.tool_name === 'Edit') {
+                sessionManager.setPermissionRequest(event.session_id, true);
+            }
             if (event.tool_name) {
                 sessionManager.setCurrentTool(event.session_id, {
                     name: event.tool_name,
@@ -28,7 +30,6 @@ export function handleHookEvent(event: HookEvent, sessionManager: SessionManager
             break;
 
         case 'PermissionRequest':
-            console.log('[HookEvent] PermissionRequest received, session:', event.session_id, 'tool:', event.tool_name);
             sessionManager.setPermissionRequest(event.session_id, true);
             if (event.tool_name) {
                 const session = sessionManager.getById(event.session_id);

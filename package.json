@@ -7,6 +7,7 @@
   "engines": {
     "vscode": "^1.109.0"
   },
+  "icon": "resources/icons/agentdock.png",
   "categories": [
     "AI",
     "Other"
@@ -20,7 +21,8 @@
     "claude",
     "ai",
     "terminal",
-    "kanban"
+    "kanban",
+    "coding agents"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",

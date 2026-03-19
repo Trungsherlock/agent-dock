@@ -2,7 +2,9 @@
 
 A kanban-style board inside VS Code for managing multiple AI coding agent sessions side by side.
 
-> **Screenshot / demo GIF coming soon**
+![Agents board](https://raw.githubusercontent.com/Trungsherlock/agent-dock/main/resources/images/agent_img.png)
+
+![Sub-agents browser](https://raw.githubusercontent.com/Trungsherlock/agent-dock/main/resources/images/subagent_img.png)
 
 ---
 
@@ -15,6 +17,7 @@ A kanban-style board inside VS Code for managing multiple AI coding agent sessio
 - **Skills** — attach reusable skill files to a session so agents have the right context from the start
 - **Permission alerts** — get notified inline when an agent is waiting for your approval
 - **Auto-discovery** — existing Claude Code sessions are detected automatically on startup; no manual wiring needed
+- **Sub-agent browser** — view all global and project-level sub-agent definitions with their model, tools, and skills; open any file with one click
 
 ---
 
@@ -22,7 +25,7 @@ A kanban-style board inside VS Code for managing multiple AI coding agent sessio
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and available on your `PATH`
 - VS Code `1.109.0` or later
-- Python 3 (for hook-based real-time updates — optional but recommended)
+- Python 3 (`python3` on macOS/Linux, `python` on Windows) — for hook-based real-time updates; optional but recommended
 
 ---
 
@@ -35,9 +38,13 @@ A kanban-style board inside VS Code for managing multiple AI coding agent sessio
 
 ---
 
-## Session Board
+## Two Tabs
 
-Each card on the board shows:
+### Agents tab
+
+The main kanban board. Shows all active sessions grouped into cohorts.
+
+Each session card displays:
 
 | Field | Description |
 |---|---|
@@ -46,14 +53,26 @@ Each card on the board shows:
 | Current tool | The tool Claude is executing right now |
 | Files touched | Count of files modified this session |
 | Tokens | Input / output token count |
-| Cost | Estimated USD cost |
 | Context window | Fill % of the context window |
+
+A summary bar at the top of the tab shows total active sessions, combined token usage, and total cost across all sessions.
+
+### Sub-Agents tab
+
+Lists all available sub-agent definition files, grouped by scope:
+
+- **Global** — agents defined in `~/.claude/agents/` (available across all workspaces)
+- **Project** — agents defined in `.claude/agents/` inside the current workspace
+
+Each card shows the agent's name, description, model, allowed tools, and skills. Click a card to expand these details. Click **Open** to jump directly to the agent's definition file in the editor.
+
+The two scope groups can be reordered by dragging.
 
 ---
 
 ## Cohorts
 
-Cohorts are horizontal swim lanes. Drag sessions between cohorts to organise them, or create a new cohort from the board header. Sessions in the same cohort typically share a common goal or branch.
+Cohorts are horizontal swim lanes on the Agents tab. Drag sessions between cohorts to organise them, or create a new cohort from the board footer. Sessions in the same cohort typically share a common goal or branch.
 
 ---
 
@@ -91,7 +110,7 @@ This extension does not add any VS Code settings at this time.
 ## Known Issues
 
 - Sessions from other workspaces may appear briefly on startup before being filtered out
-- Terminal restore on VS Code reload may create a duplicate terminal in rare cases (fix in progress)
+- Terminal restore on VS Code reload may create a duplicate terminal in rare cases — workaround: close the duplicate and click Resume on the session card
 
 ---
 

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-03-14
+## [0.1.0] - 2026-03-19
 
 ### Added
 - Kanban-style board view in the Activity Bar for managing multiple AI coding agent sessions
@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cross-platform support: Windows, macOS, and Linux
 - Agent architecture — extensible `AgentDriver` interface and `AgentRegistry` for future support of additional coding agents (Codex, Gemini, Copilot, etc.)
 - `fs.watch()` with polling fallback — polling only activates when native file watching is unavailable
+
+### Security / Reliability
+- Hook server: incoming request body capped at 1 MB to prevent memory exhaustion
+- Hook installer: settings.json written atomically via temp file + rename to prevent corruption on crash
+- Hook installer: uses `python3` on macOS/Linux and `python` on Windows for correct cross-platform invocation
+- Hook installer: skips re-installation and logs a warning if `settings.json` is malformed rather than silently overwriting
 
 [Unreleased]: https://github.com/Trungsherlock/agent-dock/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/Trungsherlock/agent-dock/releases/tag/v0.1.0
