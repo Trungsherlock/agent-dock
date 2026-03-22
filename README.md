@@ -2,9 +2,7 @@
 
 A kanban-style board inside VS Code for managing multiple AI coding agent sessions side by side.
 
-![Agents board](https://raw.githubusercontent.com/Trungsherlock/agent-dock/main/resources/images/agent_img.png)
-
-![Sub-agents browser](https://raw.githubusercontent.com/Trungsherlock/agent-dock/main/resources/images/subagent_img.png)
+![AgentDock](https://raw.githubusercontent.com/Trungsherlock/agent-dock/main/resources/gif/agentdock.gif)
 
 ---
 
