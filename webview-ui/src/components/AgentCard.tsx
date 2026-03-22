@@ -97,7 +97,7 @@ export function AgentCard({ card, index, onClick }: AgentCardProps) {
 
   const statusStyle = STATUS_STYLE[card.status] ?? STATUS_STYLE.idle;
   const frameworkBadge = FRAMEWORK_BADGE[card.framework] ?? FRAMEWORK_BADGE.custom;
-  const totalTokens = card.tokensInput + card.tokensOutput;
+  const totalTokens = card.contextWindowUsed;
   const contextPct =
     card.contextWindowMax > 0
       ? Math.min(100, Math.round((card.contextWindowUsed / card.contextWindowMax) * 100))

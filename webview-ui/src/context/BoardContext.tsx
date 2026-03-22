@@ -133,6 +133,7 @@ const MOCK_STATE: BoardState = {
       updatedAt: new Date().toISOString(),
       currentTask: "Adding pagination to GET /users endpoint",
       currentTool: { name: "Edit", target: "src/routes/users.ts" },
+      waitingForPermission: true,
       filesTouched: [
         "src/routes/users.ts",
         "src/db/queries.ts",
